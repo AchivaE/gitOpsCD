@@ -8,7 +8,7 @@ metadata:
 spec:
   description: Single controlled deployment of cluster-scoped platform add-ons.
   sourceRepos:
-    - https://github.com/spaceUp-Inovation/spaceup-platform.git
+    - https://github.com/AchivaE/gitOpsCD.git
     - https://charts.external-secrets.io
   destinations:
     - namespace: platform-system

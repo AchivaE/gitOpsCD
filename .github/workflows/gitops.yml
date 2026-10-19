@@ -3,8 +3,8 @@ name: GitOps chart validation
 on:
   pull_request:
     paths:
-      - 'gitOpsCD/argoCD/**'
-      - 'gitOpsCD/pipelines/gitops/**'
+      - 'argoCD/**'
+      - 'pipelines/gitops/**'
   workflow_dispatch:
     inputs:
       service:
@@ -43,17 +43,17 @@ jobs:
           version: v3.18.4
       - name: Validate Argo CD source layout
         shell: bash
-        run: bash gitOpsCD/pipelines/gitops/validate-argo-layout.sh
+        run: bash pipelines/gitops/validate-argo-layout.sh
       - name: Lint and render local profiles
         shell: bash
         run: |
           set -euo pipefail
-          helm lint gitOpsCD/argoCD/helm/services/config-ingestor -f gitOpsCD/argoCD/helm/services/config-ingestor/values-local.yaml
-          helm template config-ingestor gitOpsCD/argoCD/helm/services/config-ingestor -n spaceup-local -f gitOpsCD/argoCD/helm/services/config-ingestor/values-local.yaml >/dev/null
-          helm lint gitOpsCD/argoCD/helm/services/gateway-ingestor -f gitOpsCD/argoCD/helm/services/gateway-ingestor/values-local.yaml
-          helm template gateway-ingestor gitOpsCD/argoCD/helm/services/gateway-ingestor -n spaceup-local -f gitOpsCD/argoCD/helm/services/gateway-ingestor/values-local.yaml >/dev/null
-          helm lint gitOpsCD/argoCD/helm/cluster-addons -f gitOpsCD/argoCD/helm/cluster-addons/values-local.yaml
-          helm template cluster-addons gitOpsCD/argoCD/helm/cluster-addons -n platform-system -f gitOpsCD/argoCD/helm/cluster-addons/values-local.yaml >/dev/null
+          helm lint argoCD/helm/services/config-ingestor -f argoCD/helm/services/config-ingestor/values-local.yaml
+          helm template config-ingestor argoCD/helm/services/config-ingestor -n spaceup-local -f argoCD/helm/services/config-ingestor/values-local.yaml >/dev/null
+          helm lint argoCD/helm/services/gateway-ingestor -f argoCD/helm/services/gateway-ingestor/values-local.yaml
+          helm template gateway-ingestor argoCD/helm/services/gateway-ingestor -n spaceup-local -f argoCD/helm/services/gateway-ingestor/values-local.yaml >/dev/null
+          helm lint argoCD/helm/cluster-addons -f argoCD/helm/cluster-addons/values-local.yaml
+          helm template cluster-addons argoCD/helm/cluster-addons -n platform-system -f argoCD/helm/cluster-addons/values-local.yaml >/dev/null
 
   promotion:
     if: github.event_name == 'workflow_dispatch'
@@ -70,7 +70,7 @@ jobs:
         shell: bash
         env:
           PATCH_OUT: image-promotion.patch
-        run: bash gitOpsCD/pipelines/gitops/validate-promotion.sh '${{ inputs.service }}' '${{ inputs.environment }}' '${{ inputs.provider }}' '${{ inputs.imageDigest }}'
+        run: bash pipelines/gitops/validate-promotion.sh '${{ inputs.service }}' '${{ inputs.environment }}' '${{ inputs.provider }}' '${{ inputs.imageDigest }}'
       - uses: actions/upload-artifact@v7
         with:
           name: image-promotion-${{ inputs.service }}-${{ inputs.environment }}

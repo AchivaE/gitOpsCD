@@ -11,8 +11,8 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/spaceUp-Inovation/spaceup-platform.git
-    path: gitOpsCD/argoCD/argo/overlays/azure-staging
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    path: argoCD/argo/overlays/azure-staging
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc

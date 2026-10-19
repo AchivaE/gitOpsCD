@@ -24,16 +24,14 @@ bash pipelines/gitops/validate-promotion.sh \
   around the common script. It publishes the patch and can optionally create a
   reviewed Azure DevOps pull request. That optional step is the only
   Azure-DevOps-specific behavior.
-- **GitHub:** the workflow template at `gitOpsCD/.github/workflows/gitops.yml`
-  validates all local profiles on pull requests once copied to the Git root. Its
+- **GitHub:** the workflow at `.github/workflows/gitops.yml`
+  validates all local profiles on pull requests. Its
   manual workflow accepts the
   same four promotion inputs and publishes exactly the same patch artifact.
 
-> The GitHub Actions file must live at
-> `<repository-root>/.github/workflows/gitops.yml`. In this checkout, the Git
-> root is the parent of `gitOpsCD`; GitHub will not discover a workflow kept
-> under `gitOpsCD/.github`. The workflow content is already written for that
-> root location and uses `gitOpsCD/...` paths.
+> The GitHub Actions file lives at
+> `<repository-root>/.github/workflows/gitops.yml` and uses repository-relative
+> `argoCD/...` and `pipelines/...` paths.
 
 For a production promotion, use a signed and security-scanned `sha256` digest.
 The production Helm values reject a mutable tag; after a reviewed merge, Argo

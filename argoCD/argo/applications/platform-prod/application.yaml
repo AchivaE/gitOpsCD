@@ -8,8 +8,8 @@ metadata:
 spec:
   project: spaceup-cluster-addons
   source:
-    repoURL: https://github.com/spaceUp-Inovation/spaceup-platform.git
-    path: gitOpsCD/argoCD/helm/cluster-addons
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    path: argoCD/helm/cluster-addons
     targetRevision: main
     helm:
       valueFiles: [values.yaml, values-azure.yaml, values-prod.yaml]

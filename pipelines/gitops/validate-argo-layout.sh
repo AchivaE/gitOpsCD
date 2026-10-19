@@ -30,25 +30,25 @@ for file in \
   require_file "$file"
 done
 
-# These are paths from Git repository root, not from gitOpsCD/.
+# These are paths from the Git repository root.
 for path in \
-  gitOpsCD/argoCD/argo/overlays/local \
-  gitOpsCD/argoCD/argo/overlays/azure-staging \
-  gitOpsCD/argoCD/argo/overlays/azure-prod \
-  gitOpsCD/argoCD/helm/cluster-addons \
-  gitOpsCD/argoCD/helm/services/config-ingestor \
-  gitOpsCD/argoCD/helm/services/gateway-ingestor; do
+  argoCD/argo/overlays/local \
+  argoCD/argo/overlays/azure-staging \
+  argoCD/argo/overlays/azure-prod \
+  argoCD/helm/cluster-addons \
+  argoCD/helm/services/config-ingestor \
+  argoCD/helm/services/gateway-ingestor; do
   test -d "${repository_root}/${path}" || { echo "Argo Git path does not exist: ${path}" >&2; exit 1; }
 done
 
-require_text "${argo_root}/bootstrap/argocd-bootstrap.yaml" "path: gitOpsCD/argoCD/argo/overlays/local"
-require_text "${argo_root}/bootstrap/argocd-bootstrap-azure-staging.yaml" "path: gitOpsCD/argoCD/argo/overlays/azure-staging"
-require_text "${argo_root}/bootstrap/argocd-bootstrap-azure-prod.yaml" "path: gitOpsCD/argoCD/argo/overlays/azure-prod"
-require_text "${argo_root}/applications/services-dev/applicationset.yaml" "path: gitOpsCD/argoCD/helm/services/*"
+require_text "${argo_root}/bootstrap/argocd-bootstrap.yaml" "path: argoCD/argo/overlays/local"
+require_text "${argo_root}/bootstrap/argocd-bootstrap-azure-staging.yaml" "path: argoCD/argo/overlays/azure-staging"
+require_text "${argo_root}/bootstrap/argocd-bootstrap-azure-prod.yaml" "path: argoCD/argo/overlays/azure-prod"
+require_text "${argo_root}/applications/services-dev/applicationset.yaml" "path: argoCD/helm/services/*"
 require_text "${argo_root}/applications/services-dev/applicationset.yaml" "values-local.yaml"
 require_text "${argo_root}/applications/services-staging/applicationset.yaml" "values-azure.yaml"
 require_text "${argo_root}/applications/services-prod/applicationset.yaml" "values-prod.yaml"
-require_text "${argo_root}/applications/platform-prod/application.yaml" "path: gitOpsCD/argoCD/helm/cluster-addons"
+require_text "${argo_root}/applications/platform-prod/application.yaml" "path: argoCD/helm/cluster-addons"
 require_text "${argo_root}/projects/cluster-addons/project.yaml" "namespace: external-secrets"
 require_text "${argo_root}/config/argocd-cm-health.yaml" "argocd.argoproj.io/sync-wave: \"-40\""
 require_text "${argo_root}/config/argocd-cm-health.yaml" "resource.customizations.health.argoproj.io_Application"

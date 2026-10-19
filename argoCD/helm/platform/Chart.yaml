@@ -21,7 +21,6 @@ maintainers:
   - name: SpaceUp Platform Team
     email: platform@spaceup.org
 
-icon: "https://raw.githubusercontent.com/spaceUp-Inovation/spaceup-platform/main/docs/logo.png"
 
 annotations:
   chart-type: "umbrella"

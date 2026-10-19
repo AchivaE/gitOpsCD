@@ -19,7 +19,7 @@ dans **Settings > Repositories**.
 Sur un cluster local, appliquez uniquement :
 
 ```powershell
-kubectl apply -n argocd -f gitOpsCD/argoCD/argo/bootstrap/argocd-bootstrap.yaml
+kubectl apply -n argocd -f argoCD/argo/bootstrap/argocd-bootstrap.yaml
 ```
 
 Sur AKS, renseignez d'abord les identifiants Azure et l'URL Key Vault dans

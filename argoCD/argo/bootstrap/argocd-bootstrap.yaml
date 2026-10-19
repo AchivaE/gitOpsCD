@@ -11,10 +11,10 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/spaceUp-Inovation/spaceup-platform.git
-    # This repository keeps its delivery code below gitOpsCD/.
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    # Repository-relative paths start at argoCD/.
     # A local cluster receives development applications only.
-    path: gitOpsCD/argoCD/argo/overlays/local
+    path: argoCD/argo/overlays/local
     targetRevision: main
   destination:
     server: https://kubernetes.default.svc

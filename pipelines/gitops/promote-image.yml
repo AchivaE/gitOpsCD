@@ -32,8 +32,8 @@ pool:
   vmImage: ubuntu-22.04
 
 variables:
-  chartPath: gitOpsCD/argoCD/helm/services/${{ parameters.service }}
-  valuesFile: gitOpsCD/argoCD/helm/services/${{ parameters.service }}/values-${{ parameters.environment }}.yaml
+  chartPath: argoCD/helm/services/${{ parameters.service }}
+  valuesFile: argoCD/helm/services/${{ parameters.service }}/values-${{ parameters.environment }}.yaml
 
 steps:
   - checkout: self
@@ -42,12 +42,12 @@ steps:
 
   - bash: |
       set -euo pipefail
-      bash gitOpsCD/pipelines/gitops/validate-argo-layout.sh
+      bash pipelines/gitops/validate-argo-layout.sh
     displayName: Validate Argo CD source layout
 
   - bash: |
       set -euo pipefail
-      bash gitOpsCD/pipelines/gitops/validate-promotion.sh \
+      bash pipelines/gitops/validate-promotion.sh \
         '${{ parameters.service }}' \
         '${{ parameters.environment }}' \
         '${{ parameters.provider }}' \

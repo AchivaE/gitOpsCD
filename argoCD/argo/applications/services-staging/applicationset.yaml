@@ -8,10 +8,10 @@ metadata:
 spec:
   generators:
     - git:
-        repoURL: https://github.com/spaceUp-Inovation/spaceup-platform.git
+        repoURL: https://github.com/AchivaE/gitOpsCD.git
         revision: main
         directories:
-          - path: gitOpsCD/argoCD/helm/services/*
+          - path: argoCD/helm/services/*
   template:
     metadata:
       name: "staging-{{ path.basename }}"
@@ -21,7 +21,7 @@ spec:
     spec:
       project: spaceup-platform-staging
       source:
-        repoURL: https://github.com/spaceUp-Inovation/spaceup-platform.git
+        repoURL: https://github.com/AchivaE/gitOpsCD.git
         path: "{{ path }}"
         targetRevision: main
         helm:

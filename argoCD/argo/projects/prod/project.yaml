@@ -11,7 +11,7 @@ metadata:
 spec:
   description: Production environment for SpaceUp Platform
   sourceRepos:
-    - "https://github.com/spaceUp-Inovation/spaceup-platform.git"
+    - "https://github.com/AchivaE/gitOpsCD.git"
   destinations:
     - namespace: "spaceup"
       server: "https://kubernetes.default.svc"

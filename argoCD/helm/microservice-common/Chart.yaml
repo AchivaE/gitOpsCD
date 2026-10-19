@@ -10,10 +10,9 @@ type: library
 version: 1.0.0
 appVersion: "2.0.0"
 
-home: https://github.com/spaceUp-Inovation/spaceup-platform
-icon: https://raw.githubusercontent.com/spaceUp-Inovation/spaceup-platform/main/docs/logo.png
+home: https://github.com/AchivaE/gitOpsCD
 sources:
-  - https://github.com/spaceUp-Inovation/spaceup-platform/tree/main/charts/common/microservice-common
+  - https://github.com/AchivaE/gitOpsCD/tree/main/argoCD/helm/microservice-common
 
 keywords:
   - spaceup
@@ -28,7 +27,7 @@ keywords:
 maintainers:
   - name: "SpaceUp Platform Team"
     email: "platform@spaceup.org"
-    url: "https://github.com/spaceUp-Inovation/spaceup-platform"
+    url: "https://github.com/AchivaE/gitOpsCD"
 
 annotations:
   "artifact.spaceup.org/security-level": "critical"

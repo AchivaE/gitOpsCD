@@ -1,0 +1,21 @@
+{{- if .Values.podDisruptionBudgets.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: spaceup-platform-pdb
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.podDisruptionBudgets.minAvailable }}
+  minAvailable: {{ .Values.podDisruptionBudgets.minAvailable }}
+  {{- end }}
+  {{- if .Values.podDisruptionBudgets.maxUnavailable }}
+  maxUnavailable: {{ .Values.podDisruptionBudgets.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      platform: "spaceup"
+  unhealthyPodEvictionPolicy: "AlwaysAllow"
+{{- end }}
+

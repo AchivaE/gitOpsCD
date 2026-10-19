@@ -1,0 +1,29 @@
+{{- if .Values.prometheus.enabled -}}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "platform.fullname" . }}-sovereignty-alerts
+  labels:
+    app.kubernetes.io/name: {{ include "platform.fullname" . }}
+spec:
+  groups:
+  - name: sovereignty.rules
+    rules:
+    - alert: SecretsSyncFailed
+      expr: 'externalsecret_status_condition{status="False"} > 0'
+      for: 5m
+      labels:
+        severity: critical
+      annotations:
+        summary: "Échec de synchronisation des secrets souverains"
+        description: "L'ExternalSecret {{`{{`}} $labels.name {{`}}`}} ne parvient pas à se synchroniser depuis le fournisseur."
+    - alert: BackupFailed
+      expr: 'velero_backup_failed_total > 0'
+      for: 1h
+      labels:
+        severity: critical
+      annotations:
+        summary: "Échec de sauvegarde Velero"
+        description: "Une sauvegarde critique a échoué dans le namespace {{`{{`}} $labels.namespace {{`}}`}}."
+{{- end -}}

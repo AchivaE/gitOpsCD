@@ -1,0 +1,8 @@
+image:
+  tag: REPLACE_WITH_PROD_IMMUTABLE_TAG
+  requireDigest: true
+ingress:
+  host: api.spaceup.org
+  tlsSecretName: gateway-ingestor-prod-tls
+certificate:
+  issuerName: letsencrypt-prod

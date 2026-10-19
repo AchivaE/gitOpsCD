@@ -1,0 +1,86 @@
+{{- if .Values.resourceQuota.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: spaceup-platform-quota
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+spec:
+  hard:
+    {{- if .Values.resourceQuota.limits.requests.memory }}
+    requests.memory: {{ .Values.resourceQuota.limits.requests.memory | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.limits.requests.cpu }}
+    requests.cpu: {{ .Values.resourceQuota.limits.requests.cpu | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.limits.limits.memory }}
+    limits.memory: {{ .Values.resourceQuota.limits.limits.memory | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.limits.limits.cpu }}
+    limits.cpu: {{ .Values.resourceQuota.limits.limits.cpu | quote }}
+    {{- end }}
+    {{- if .Values.resourceQuota.hard.pods }}
+    pods: {{ .Values.resourceQuota.hard.pods | quote }}
+    {{- else }}
+    pods: "1000"
+    {{- end }}
+    {{- if .Values.resourceQuota.hard.services }}
+    services: {{ .Values.resourceQuota.hard.services | quote }}
+    {{- else }}
+    services: "100"
+    {{- end }}
+    {{- if .Values.resourceQuota.hard.persistentvolumeclaims }}
+    persistentvolumeclaims: {{ .Values.resourceQuota.hard.persistentvolumeclaims | quote }}
+    {{- else }}
+    persistentvolumeclaims: "50"
+    {{- end }}
+  scopeSelector:
+    matchExpressions:
+      - operator: In
+        scopeName: PriorityClass
+        values: ["default"]
+
+---
+# LimitRange for default resource requests/limits per pod
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: spaceup-platform-limits
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+spec:
+  limits:
+    # Default for containers if not specified
+    - type: Container
+      default:
+        memory: "512Mi"
+        cpu: "500m"
+      defaultRequest:
+        memory: "256Mi"
+        cpu: "100m"
+      max:
+        memory: "2Gi"
+        cpu: "2000m"
+      min:
+        memory: "64Mi"
+        cpu: "10m"
+
+    # For Pod resources
+    - type: Pod
+      max:
+        memory: "4Gi"
+        cpu: "4000m"
+      min:
+        memory: "64Mi"
+        cpu: "10m"
+
+    # For PersistentVolumeClaim
+    - type: PersistentVolumeClaim
+      max:
+        storage: "1Ti"
+      min:
+        storage: "1Gi"
+{{- end }}
+

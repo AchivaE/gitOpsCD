@@ -1,0 +1,15 @@
+secrets:
+  externalSecrets:
+    secretStoreRef: azure-keyvault
+certificateIssuers:
+  ingressClassName: azure-application-gateway
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: managed-csi-premium
+  grafana:
+    persistence:
+      storageClassName: managed-csi-premium

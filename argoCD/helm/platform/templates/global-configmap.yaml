@@ -1,0 +1,126 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spaceup-platform-config
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+
+data:
+  # ======================== Platform Metadata ========================
+  PLATFORM_NAME: "spaceup-platform"
+  PLATFORM_VERSION: "0.1.0"
+  ENVIRONMENT: {{ include "platform.environment" . }}
+  NAMESPACE: {{ include "platform.namespace" . }}
+  DOMAIN: {{ include "platform.domain" . }}
+  LOG_LEVEL: {{ include "platform.logging.level" . }}
+  TLS_ISSUER: {{ include "platform.tls.issuer" . }}
+
+  # ======================== Service Discovery (Consul) ========================
+  {{- if .Values.consul.enabled }}
+  CONSUL_ENABLED: "true"
+  CONSUL_HOST: "consul-ui.{{ .Values.global.namespace }}.svc.cluster.local"
+  CONSUL_PORT: "8500"
+  {{- else }}
+  CONSUL_ENABLED: "false"
+  {{- end }}
+
+  # ======================== Database (PostgreSQL) ========================
+  {{- if .Values.postgresql.enabled }}
+  POSTGRESQL_ENABLED: "true"
+  POSTGRESQL_HOST: "postgresql-primary.{{ .Values.global.namespace }}.svc.cluster.local"
+  POSTGRESQL_PORT: "5432"
+  POSTGRESQL_DATABASE: {{ .Values.postgresql.global.postgresql.pgDatabase | default "spaceup" | quote }}
+  {{- else }}
+  POSTGRESQL_ENABLED: "false"
+  {{- end }}
+
+  # ======================== Cache (Redis) ========================
+  {{- if .Values.redis.enabled }}
+  REDIS_ENABLED: "true"
+  REDIS_HOST: "redis-master.{{ .Values.global.namespace }}.svc.cluster.local"
+  REDIS_PORT: "6379"
+  {{- else }}
+  REDIS_ENABLED: "false"
+  {{- end }}
+
+  # ======================== IAM (Keycloak) ========================
+  {{- if .Values.keycloak.enabled }}
+  KEYCLOAK_ENABLED: "true"
+  KEYCLOAK_HOST: "keycloak.{{ .Values.global.namespace }}.svc.cluster.local"
+  KEYCLOAK_PORT: "8080"
+  KEYCLOAK_REALM: {{ .Values.keycloak.auth.realm | default "spaceup" | quote }}
+  {{- else }}
+  KEYCLOAK_ENABLED: "false"
+  {{- end }}
+
+  # ======================== Monitoring (Prometheus & Grafana) ========================
+  {{- if .Values.prometheus.enabled }}
+  PROMETHEUS_ENABLED: "true"
+  PROMETHEUS_HOST: "prometheus-operated.{{ .Values.global.namespace }}.svc.cluster.local"
+  PROMETHEUS_PORT: "9090"
+  {{- else }}
+  PROMETHEUS_ENABLED: "false"
+  {{- end }}
+
+  {{- if .Values.grafana.enabled }}
+  GRAFANA_ENABLED: "true"
+  GRAFANA_HOST: "grafana.{{ .Values.global.namespace }}.svc.cluster.local"
+  GRAFANA_PORT: "80"
+  {{- else }}
+  GRAFANA_ENABLED: "false"
+  {{- end }}
+
+  # ======================== Backup Configuration ========================
+  {{- if .Values.backup.enabled }}
+  BACKUP_ENABLED: "true"
+  BACKUP_SCHEDULE: {{ .Values.backup.schedule | quote }}
+  BACKUP_RETENTION: {{ .Values.backup.retention | quote }}
+  {{- else }}
+  BACKUP_ENABLED: "false"
+  {{- end }}
+
+  # ======================== Security Configuration ========================
+  RBAC_ENABLED: {{ .Values.rbac.create | quote }}
+  NETWORK_POLICY_ENABLED: {{ .Values.networkPolicy.enabled | quote }}
+  POD_SECURITY_POLICY: {{ .Values.podSecurity.enforce | quote }}
+
+---
+# Config Map for deployment scripts and utilities
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spaceup-scripts
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+
+data:
+  # ======================== Health Check Script ========================
+  health-check.sh: |
+    #!/bin/bash
+    set -e
+    echo "Checking platform health..."
+
+    # Check Consul
+    if [ "$CONSUL_ENABLED" = "true" ]; then
+      echo "Checking Consul..."
+      curl -s http://$CONSUL_HOST:$CONSUL_PORT/v1/status/leader > /dev/null || exit 1
+    fi
+
+    echo "✅ Platform health check passed"
+
+  # ======================== Environment Info Script ========================
+  env-info.sh: |
+    #!/bin/bash
+    echo "=== SpaceUp Platform Environment Info ==="
+    echo "Environment: $ENVIRONMENT"
+    echo "Namespace: $NAMESPACE"
+    echo "Domain: $DOMAIN"
+    echo "Log Level: $LOG_LEVEL"
+    echo ""
+    echo "=== Dependencies Status ==="
+    echo "Consul: $CONSUL_ENABLED"
+    echo "Prometheus: $PROMETHEUS_ENABLED"
+    echo "Grafana: $GRAFANA_ENABLED"
+

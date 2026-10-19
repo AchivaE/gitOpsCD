@@ -1,0 +1,21 @@
+# Portable local-cluster profile (kind, k3d, Docker Desktop Kubernetes, minikube).
+# Helm still only pulls/runs the selected image; load or pull that image beforehand.
+image:
+  repository: config-ingestor
+  tag: local
+  pullPolicy: IfNotPresent
+replicas: 1
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+monitoring:
+  enabled: false
+externalSecret:
+  enabled: false
+configRepository:
+  enabled: false
+consul:
+  enabled: false
+networkPolicy:
+  enabled: false

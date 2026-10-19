@@ -1,0 +1,166 @@
+# ============================================================================
+# SpaceUp Platform - Base Values Configuration
+# ============================================================================
+global:
+  environment: "development"
+  namespace: "default"
+  domain: "spaceup.local"
+  imagePullPolicy: IfNotPresent
+  logging:
+    level: INFO
+  tls:
+    issuer: letsencrypt-prod
+  labels:
+    app.kubernetes.io/name: spaceup-platform
+    app.kubernetes.io/version: "2.0.0"
+    app.kubernetes.io/managed-by: helm
+    platform: spaceup
+
+# Secrets are injected at deployment time through External Secrets; never commit credentials here.
+secrets:
+  provider: azureKeyVault
+  secretPrefix: spaceup-development
+  externalSecrets:
+    enabled: false
+
+consul:
+  # Do not run Consul without TLS, ACLs, gossip encryption and backup design.
+  enabled: false
+  server:
+    replicas: 3
+  client:
+    enabled: true
+  ui:
+    enabled: true
+
+postgresql:
+  # Stateful data services require a dedicated chart, backup and restore runbook.
+  enabled: false
+  auth:
+    username: spaceup_user
+    existingSecret: postgres-credentials
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+  metrics:
+    enabled: true
+
+redis:
+  enabled: false
+  auth:
+    enabled: true
+    existingSecret: redis-credentials
+    existingSecretPasswordKey: password
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+  replica:
+    replicaCount: 2
+  metrics:
+    enabled: true
+
+keycloak:
+  enabled: false
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-admin
+    passwordSecretKey: admin-password
+  postgresql:
+    enabled: true
+  replicaCount: 1
+  ingress:
+    enabled: true
+    hostname: "keycloak.spaceup.local"
+  metrics:
+    enabled: true
+
+prometheus:
+  # Installed once by helm/cluster-addons, not per application environment.
+  enabled: false
+  prometheusSpec:
+    retention: 30d
+    resources:
+      requests:
+        memory: 2Gi
+      limits:
+        memory: 4Gi
+    persistence:
+      enabled: true
+      size: 50Gi
+
+grafana:
+  enabled: false
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    size: 5Gi
+
+cert-manager:
+  enabled: false
+  installCRDs: true
+
+loki:
+  # Loki stays off until its Azure Blob containers and workload identity exist.
+  enabled: false
+
+velero:
+  enabled: false
+
+gatekeeper:
+  # ConstraintTemplates must be installed and tested before constraints are enabled.
+  enabled: false
+
+tracing:
+  enabled: false
+
+podSecurity:
+  enforce: restricted
+
+rbac:
+  # No platform workload consumes this service account; avoid unused privileges.
+  create: false
+  serviceAccountName: spaceup-platform
+
+networkPolicy:
+  # Workload-specific policies are defined by the service charts.
+  enabled: false
+
+podDisruptionBudgets:
+  # Dependencies own their PDBs; a namespace-wide selector is not a valid PDB.
+  enabled: false
+  minAvailable: 1
+
+# The platform ConfigMap always exposes a backup status. Actual backup
+# implementation remains disabled until the dedicated Velero/PRA contract is
+# enabled and validated for the target provider.
+backup:
+  enabled: false
+  schedule: "0 3 * * *"
+  retention: "7d"
+
+podSecurityStandards:
+  enabled: true
+  labels:
+    pod-security.kubernetes.io/enforce: "restricted"
+
+resourceQuota:
+  enabled: true
+  hard:
+    pods: "1000"
+    requests.cpu: "100"
+    requests.memory: "200Gi"
+  limits:
+    requests:
+      cpu: "100"
+      memory: "200Gi"
+    limits:
+      cpu: "200"
+      memory: "400Gi"

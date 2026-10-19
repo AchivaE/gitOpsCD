@@ -1,0 +1,33 @@
+{{- if hasPrefix "REPLACE_WITH_" .Values.image.tag }}
+{{- fail "image.tag must be an immutable image tag or digest promoted by CI" }}
+{{- end }}
+{{- if and .Values.image.requireDigest (not (regexMatch "^sha256:[a-f0-9]{64}$" .Values.image.tag)) }}
+{{- fail "production image.tag must be a sha256 digest promoted by CI" }}
+{{- end }}
+{{- if .Values.configRepository.enabled }}
+{{- $repository := required "configRepository.uri must be supplied when configRepository.enabled=true" .Values.configRepository.uri }}
+{{- if or (hasPrefix "REPLACE_WITH_" $repository) (not (hasPrefix "https://" $repository)) }}
+{{- fail "configRepository.uri must be the HTTPS URL of the private configuration repository" }}
+{{- end }}
+{{- range .Values.configRepository.egressCidrs }}
+{{- if hasPrefix "REPLACE_WITH_" . }}
+{{- fail "configRepository.egressCidrs must contain only the private Git endpoint CIDR(s)" }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if .Values.consul.enabled }}
+{{- $host := required "consul.host must name the private Consul HTTPS endpoint when consul.enabled=true" .Values.consul.host }}
+{{- if hasPrefix "REPLACE_WITH_" $host }}
+{{- fail "consul.host must be replaced with the private Consul DNS name before Argo CD can deploy config-ingestor" }}
+{{- end }}
+{{- if ne .Values.consul.scheme "https" }}
+{{- fail "consul.scheme must be https in this production chart" }}
+{{- end }}
+{{- if .Values.networkPolicy.enabled }}
+{{- range .Values.networkPolicy.consulEgressCidrs }}
+{{- if hasPrefix "REPLACE_WITH_" . }}
+{{- fail "networkPolicy.consulEgressCidrs must contain only the private Consul API CIDR(s)" }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

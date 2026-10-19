@@ -1,0 +1,186 @@
+# ============================================================================
+# SpaceUp Platform - Production Environment Override
+# ============================================================================
+global:
+  environment: "production"
+  namespace: "spaceup"
+  domain: "spaceup.org"
+  region: "centralindia"
+  imagePullPolicy: IfNotPresent
+
+consul:
+  enabled: false
+  server:
+    replicas: 5
+    storage: "20Gi"
+    storageClass: "managed-csi" # Azure dynamic disk
+  client:
+    enabled: true
+  ui:
+    enabled: true
+
+postgresql:
+  enabled: false
+  architecture: "high-availability"
+  auth:
+    username: prod_user
+    existingSecret: postgres-credentials
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+  primary:
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: "managed-csi"
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 100Gi
+      storageClass: "managed-csi"
+  metrics:
+    enabled: true
+  backup:
+    enabled: true
+    cronjob:
+      schedule: "0 1 * * *"
+
+redis:
+  enabled: false
+  auth:
+    enabled: true
+    existingSecret: redis-credentials
+    existingSecretPasswordKey: password
+  master:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "managed-csi-premium"
+  replica:
+    replicaCount: 3
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "managed-csi-premium"
+  metrics:
+    enabled: true
+
+keycloak:
+  enabled: false
+  replicaCount: 3
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-admin
+    passwordSecretKey: admin-password
+  postgresql:
+    enabled: true
+    primary:
+      persistence:
+        enabled: true
+        size: 50Gi
+        storageClass: "managed-csi-premium"
+    replica:
+      replicaCount: 2
+  ingress:
+    enabled: true
+    hostname: "keycloak.spaceup.org"
+    tls: true
+  metrics:
+    enabled: true
+
+prometheus:
+  enabled: false
+  replicas: 2
+  prometheusSpec:
+    retention: 90d
+    resources:
+      requests:
+        memory: 4Gi
+        cpu: 1000m
+      limits:
+        memory: 8Gi
+        cpu: 2000m
+    persistence:
+      enabled: true
+      size: 200Gi
+      storageClass: "managed-csi-premium"
+    externalLabels:
+      cluster: "production"
+      environment: "production"
+      region: "centralindia"
+
+grafana:
+  enabled: false
+  replicaCount: 2
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: "managed-csi-premium"
+
+cert-manager:
+  enabled: false
+  installCRDs: true
+  email: security@spaceup.org
+
+rbac:
+  create: false
+
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+
+podDisruptionBudgets:
+  enabled: false
+  minAvailable: 1
+
+podSecurityStandards:
+  enabled: true
+  labels:
+    pod-security.kubernetes.io/enforce: "restricted"
+    pod-security.kubernetes.io/audit: "restricted"
+    pod-security.kubernetes.io/warn: "restricted"
+
+resourceQuota:
+  enabled: true
+  hard:
+    pods: "2000"
+    requests.cpu: "500"
+    requests.memory: "1Ti"
+    limits.cpu: "1000"
+    limits.memory: "2Ti"
+
+backup:
+  enabled: false
+  velero:
+    enabled: true
+    schedule: "0 1 * * *"
+    retention: "90d"
+    storageLocation:
+      provider: azure
+      bucket: REPLACE_WITH_AZURE_BLOB_CONTAINER
+      prefix: velero
+    includeNamespaces:
+      - "spaceup"
+
+loki:
+  # Do not enable before Azure Blob containers and workload identity are provisioned.
+  enabled: false
+
+# ============================================================================
+# SECRETS MANAGEMENT (Production External Secrets)
+# ============================================================================
+secrets:
+  provider: "azureKeyVault"
+  secretPrefix: "spaceup-production"
+  externalSecrets:
+    enabled: false
+    refreshInterval: 15m
+  azureKeyVault:
+    vaultUrl: "https://spaceup-prod-kv.vault.azure.net"

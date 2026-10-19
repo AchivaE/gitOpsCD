@@ -1,0 +1,16 @@
+{{- if .Values.velero.enabled -}}
+---
+# Configuration spécifique pour le verrouillage des sauvegardes (Immuabilité)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "platform.fullname" . }}-backup-advanced-policies
+  namespace: {{ .Release.Namespace }}
+data:
+  retention-policy: "90d"
+  backup-hooks-config: |
+    pre.hook.backup.velero.io/command: '["/bin/sh", "-c", "pg_dumpall -U postgres > /tmp/dump.sql"]'
+    pre.hook.backup.velero.io/container: "postgresql"
+    post.hook.backup.velero.io/command: '["/bin/sh", "-c", "rm /tmp/dump.sql"]'
+    post.hook.backup.velero.io/container: "postgresql"
+{{- end -}}

@@ -1,0 +1,33 @@
+{{- if .Values.tracing.enabled -}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "platform.fullname" . }}-tracing-config
+  namespace: {{ .Release.Namespace }}
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+          http:
+    processors:
+      batch:
+      memory_limiter:
+        limit_mib: 400
+        check_interval: 5s
+    exporters:
+      logging:
+        loglevel: info
+      tempo:
+        endpoint: {{ .Values.tracing.tempo.endpoint }}
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch, memory_limiter]
+          exporters: [tempo, logging]
+{{- end -}}

@@ -1,0 +1,123 @@
+# ============================================================================
+# SpaceUp Platform - Staging Environment Override
+# ============================================================================
+global:
+  environment: "staging"
+  namespace: "spaceup-staging"
+  domain: "staging.spaceup.org"
+  region: "centralindia"
+
+consul:
+  enabled: false
+  server:
+    replicas: 3
+  client:
+    enabled: true
+
+postgresql:
+  auth:
+    username: staging_user
+    existingSecret: postgres-credentials
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "managed-csi"
+  metrics:
+    enabled: true
+
+redis:
+  auth:
+    enabled: true
+    existingSecret: redis-credentials
+    existingSecretPasswordKey: password
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: "managed-csi"
+  replica:
+    replicaCount: 2
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: "managed-csi"
+
+keycloak:
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-admin
+    passwordSecretKey: admin-password
+  replicaCount: 2
+  ingress:
+    hostname: "keycloak.staging.spaceup.org"
+
+prometheus:
+  enabled: false
+  prometheusSpec:
+    retention: 15d
+    resources:
+      requests:
+        memory: 1Gi
+        cpu: 500m
+      limits:
+        memory: 2Gi
+        cpu: 1000m
+    persistence:
+      enabled: true
+      size: 30Gi
+      storageClass: "managed-csi"
+
+grafana:
+  enabled: false
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    size: 5Gi
+
+cert-manager:
+  enabled: false
+  installCRDs: true
+  email: devops@spaceup.org
+
+networkPolicy:
+  enabled: true
+
+podDisruptionBudgets:
+  enabled: true
+  minAvailable: 1
+
+podSecurityStandards:
+  enabled: true
+
+resourceQuota:
+  enabled: true
+  hard:
+    pods: "500"
+    requests.cpu: "50"
+    requests.memory: "100Gi"
+
+backup:
+  enabled: false
+  velero:
+    enabled: true
+    schedule: "0 3 * * *"
+    retention: "7d"
+    storageLocation:
+      provider: azure
+      bucket: REPLACE_WITH_AZURE_BLOB_CONTAINER
+      prefix: velero
+
+# Secrets Management (Staging External Secrets)
+secrets:
+  provider: "azureKeyVault"
+  secretPrefix: "spaceup-staging"
+  externalSecrets:
+    enabled: false
+    refreshInterval: 30m

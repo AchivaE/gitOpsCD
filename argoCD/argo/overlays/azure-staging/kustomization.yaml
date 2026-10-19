@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# One dedicated AKS staging cluster.
+resources:
+  - ../../projects/staging
+  - ../../projects/cluster-addons
+  - ../../config
+  - ../../secrets
+  - ../../applications/platform-staging
+  - ../../applications/services-staging
+  - ../../security

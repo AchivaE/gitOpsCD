@@ -1,0 +1,4 @@
+# AWS-specific layer. The same External Secrets Operator contract is retained;
+# point this at an AWS Secrets Manager-backed ClusterSecretStore.
+externalSecret:
+  secretStoreRef: aws-secrets-manager

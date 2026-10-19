@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: spaceup-platform-dev
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-30"
+  labels:
+    environment: dev
+    app.kubernetes.io/name: spaceup-platform
+spec:
+  description: Development environment for SpaceUp Platform
+  sourceRepos:
+    - "https://github.com/spaceUp-Inovation/spaceup-platform.git"
+  destinations:
+    - namespace: "spaceup-dev"
+      server: "https://kubernetes.default.svc"
+  # Service charts may not create cluster-scoped resources.
+  clusterResourceWhitelist: []
+  namespaceResourceWhitelist:
+    - { group: "", kind: ServiceAccount }
+    - { group: "", kind: Service }
+    - { group: apps, kind: Deployment }
+    - { group: autoscaling, kind: HorizontalPodAutoscaler }
+    - { group: networking.k8s.io, kind: Ingress }
+    - { group: networking.k8s.io, kind: NetworkPolicy }
+    - { group: policy, kind: PodDisruptionBudget }
+    - { group: external-secrets.io, kind: ExternalSecret }
+    - { group: monitoring.coreos.com, kind: PrometheusRule }
+    - { group: monitoring.coreos.com, kind: ServiceMonitor }
+  orphanedResources:
+    warn: true

@@ -1,0 +1,660 @@
+# ============================================================================
+# SpaceUp Microservice Common Library Chart - Complete Values Configuration
+# ============================================================================
+# Production-ready Helm Library Chart with security-first defaults
+# All behavior is EXPLICIT and CONFIGURABLE - zero hidden defaults
+# ============================================================================
+
+# GLOBAL CONFIGURATION
+# ============================================================================
+global:
+  # Platform metadata
+  appName: "spaceup-platform"
+  environment: "production" # production | staging | development
+  region: "eu-west-1"
+
+  # Image registry and pull
+  # Image repositories are fully qualified; an empty prefix avoids ghcr.io/ghcr.io/image.
+  imageRegistry: ""
+  # Image pull secrets for private registries (e.g. Azure ACR)
+  # Production override: [{name: acr-pull-secret}]
+  imagePullSecrets: []
+
+  # Global security defaults
+  securityDefaults:
+    enabled: true
+    # Pod Security Standards compliance
+    pss:
+      enforce: "restricted" # baseline | restricted
+      audit: "restricted"
+      warn: "restricted"
+
+# DEPLOYMENT CONFIGURATION
+# ============================================================================
+enabled: true
+nameOverride: ""
+fullnameOverride: ""
+
+# Replica count (overridden by HPA if enabled)
+replicaCount: 2
+
+# Strategy for rolling updates
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# Revision history limit
+revisionHistoryLimit: 10
+
+# ============================================================================
+# CONTAINER IMAGE CONFIGURATION
+# ============================================================================
+image:
+  # Container image repository (REQUIRED - must be set by consuming chart)
+  repository: ""
+
+  # Image tag or version (REQUIRED - must be set by consuming chart)
+  tag: ""
+
+  # Image pull policy
+  pullPolicy: IfNotPresent
+
+  # Image pull secrets for private registries
+  pullSecrets: []
+
+# ============================================================================
+# POD SECURITY & CONTEXT
+# ============================================================================
+# Pod-level security context (applies to all containers)
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container-level security context (applies to specific container)
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+    add: []
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# ============================================================================
+# SERVICE ACCOUNT CONFIGURATION
+# ============================================================================
+serviceAccount:
+  create: true
+  annotations:
+    # Optional: annotations for cloud provider integrations
+    # Example for AWS IAM Roles for Service Accounts (IRSA):
+    # "eks.amazonaws.com/role-arn": "arn:aws:iam::ACCOUNT:role/SERVICE_ROLE"
+
+  # Service account name (auto-generated if empty and create=true)
+  name: ""
+
+  # Mount the service account token into the pod (default false for security)
+  automountToken: false
+
+# ============================================================================
+# RBAC & AUTHORIZATION
+# ============================================================================
+rbac:
+  create: true
+
+  # Rules for ClusterRole (if needed for cross-namespace resources)
+  # Example: watching ConfigMaps across namespaces
+  clusterRules: []
+
+  # Rules for Role (namespace-scoped)
+  # Leave empty for basic deployments (no special permissions needed)
+  # Examples for common needs:
+  # - For ConfigMap/Secret reading:
+  #   - apiGroups: [""]
+  #     resources: ["configmaps", "secrets"]
+  #     verbs: ["get", "list", "watch"]
+  # - For Consul integration:
+  #   - apiGroups: [""]
+  #     resources: ["pods"]
+  #     verbs: ["get", "list"]
+  rules: []
+
+# ============================================================================
+# KUBERNETES SERVICE CONFIGURATION
+# ============================================================================
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+  # Service IP address (optional - leave empty for auto-assignment)
+  clusterIP: ""
+
+  # NodePort (only used when type is NodePort)
+  # Leave empty for auto-assignment, or specify port in range 30000-32767
+  nodePort: ""
+
+  # Service annotations
+  annotations: {}
+
+  # Publish service as ExternalName (e.g., for DNS round-robin)
+  externalName: ""
+
+  # Session affinity configuration
+  sessionAffinity: None
+  sessionAffinityTimeout: ""
+
+# ============================================================================
+# INGRESS CONFIGURATION
+# ============================================================================
+ingress:
+  enabled: true
+
+  # Ingress class name (typically "nginx" or "istio")
+  ingressClassName: "nginx"
+
+  # Ingress annotations
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+
+  # Hostname for ingress rule
+  hostname: "" # REQUIRED: must be set by consuming chart (e.g., auth-api.spaceup.local)
+
+  # URL path for service
+  path: /
+  pathType: Prefix
+
+  # TLS configuration
+  tls:
+    enabled: true
+    # TLS secret name (auto-generated if empty)
+    secretName: ""
+    # Cert-issuer for automatic generation
+    certIssuer: "letsencrypt-prod"
+
+# ============================================================================
+# POD DISRUPTION BUDGET
+# ============================================================================
+podDisruptionBudget:
+  enabled: true
+
+  # Either minAvailable or maxUnavailable (choose one, not both)
+  minAvailable: 1
+  # maxUnavailable: "50%"
+
+  # Unhealthy pod eviction policy (1.26+)
+  unhealthyPodEvictionPolicy: "AlwaysAllow"
+
+# ============================================================================
+# HORIZONTAL POD AUTOSCALER (HPA)
+# ============================================================================
+autoscaling:
+  enabled: true
+
+  # Min/max replicas
+  minReplicas: 2
+  maxReplicas: 5
+
+  # Scaling targets
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+  # Behavior for scale-up/down (advanced)
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 50
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 30
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Max
+
+# ============================================================================
+# RESOURCE REQUESTS & LIMITS
+# ============================================================================
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+    # ephemeral-storage: "1Gi"
+  limits:
+    memory: "512Mi"
+    cpu: "250m"
+    # ephemeral-storage: "2Gi"
+
+# ============================================================================
+# HEALTH PROBES
+# ============================================================================
+livenessProbe:
+  enabled: true
+  httpGet:
+    path: /health/live
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  enabled: true
+  httpGet:
+    path: /health/ready
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# Startup probe (configured for Spring Boot initialization)
+startupProbe:
+  enabled: true
+  httpGet:
+    path: /health/live
+    port: 8080
+    scheme: HTTP
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 30
+  successThreshold: 1
+
+# ============================================================================
+# CONTAINER PORTS & NETWORKING
+# ============================================================================
+ports:
+  - name: http
+    containerPort: 8080
+    protocol: TCP
+
+# ============================================================================
+# ENVIRONMENT VARIABLES
+# ============================================================================
+# Inject environment variables into container
+env: []
+# Example:
+#   - name: LOG_LEVEL
+#     value: "INFO"
+#   - name: SERVICE_NAME
+#     value: "auth-service"
+#   - name: DATABASE_URL
+#     valueFrom:
+#       secretKeyRef:
+#         name: db-credentials
+#         key: connection-string
+
+# Load environment from ConfigMap or Secret
+envFrom: []
+# Example:
+#   - configMapRef:
+#       name: app-config
+#   - secretRef:
+#       name: app-secrets
+
+# ============================================================================
+# CONFIGMAP CONFIGURATION
+# ============================================================================
+configMap:
+  enabled: false
+
+  # ConfigMap data (key-value pairs)
+  data: {}
+  # Example:
+  #   application.yml: |
+  #     server:
+  #       port: 8080
+  #       servlet:
+  #         context-path: /
+  #   logging.yml: |
+  #     version: 1
+  #     level: INFO
+
+# ============================================================================
+# VOLUMES & MOUNTS
+# ============================================================================
+# Volume mounts for container
+volumeMounts: []
+# Example for read-only filesystem:
+#   - name: tmp
+#     mountPath: /tmp
+#   - name: cache
+#     mountPath: /var/cache/app
+
+# Pod volumes
+volumes: []
+# Example:
+#   - name: tmp
+#     emptyDir:
+#       sizeLimit: 1Gi
+#   - name: cache
+#     emptyDir:
+#       sizeLimit: 2Gi
+
+# ============================================================================
+# SCHEDULING & AFFINITY
+# ============================================================================
+# Node affinity (schedule pods to specific nodes)
+affinity: {}
+# Example:
+#   nodeAffinity:
+#     requiredDuringSchedulingIgnoredDuringExecution:
+#       nodeSelectorTerms:
+#         - matchExpressions:
+#             - key: node.kubernetes.io/instance-type
+#               operator: In
+#               values:
+#                 - t3.medium
+
+# Pod affinity/anti-affinity
+podAffinity: {}
+podAntiAffinity: {}
+# Example anti-affinity (spread replicas across nodes):
+#   podAntiAffinity:
+#     preferredDuringSchedulingIgnoredDuringExecution:
+#       - weight: 100
+#         podAffinityTerm:
+#           labelSelector:
+#             matchExpressions:
+#               - key: app.kubernetes.io/name
+#                 operator: In
+#                 values:
+#                   - auth-service
+#           topologyKey: kubernetes.io/hostname
+
+# Node selector (schedule pods to nodes with specific labels)
+nodeSelector: {}
+
+# Node taints toleration
+tolerations: []
+# Example:
+#   - key: "dedicated"
+#     operator: "Equal"
+#     value: "microservices"
+#     effect: "NoSchedule"
+
+# Node priority class
+priorityClassName: ""
+
+# ============================================================================
+# POD ANNOTATIONS & LABELS
+# ============================================================================
+# Pod-level annotations (for monitoring, service mesh, etc.)
+podAnnotations: {}
+# Default annotations are added by helpers - these are additional
+
+# Pod annotations override (merged with defaults)
+podAnnotationsOverride: {}
+
+# Extra labels for pods and resources
+extraLabels: {}
+# Example:
+#   team: "backend"
+#   environment: "production"
+#   cost-center: "engineering"
+
+# Extra annotations for all resources
+extraAnnotations: {}
+
+# ============================================================================
+# OBSERVABILITY & MONITORING
+# ============================================================================
+observability:
+  enabled: true
+
+  # Prometheus monitoring
+  prometheus:
+    enabled: true
+    port: 8080
+    path: /metrics
+    interval: "30s"
+    scrapeTimeout: "10s"
+    scheme: "http" # http | https
+
+    # ServiceMonitor configuration (for Prometheus Operator)
+    serviceMonitor:
+      enabled: true # Enabled for Prometheus Operator scraping
+      honorLabels: false
+      relabelings: []
+      # Example relabelings:
+      # - sourceLabels: [__meta_kubernetes_pod_name]
+      #   targetLabel: pod
+      metricRelabelings: []
+      # Example metric relabelings:
+      # - sourceLabels: [__name__]
+      #   regex: 'go_.*'
+      #   action: drop
+      targetLabels: []
+      # Example: ["app", "version"]
+      podTargetLabels: []
+      # Example: ["pod-template-hash"]
+
+  # Distributed tracing (Jaeger/OpenTelemetry)
+  tracing:
+    enabled: false
+    jaeger:
+      agentHost: ""
+      agentPort: 6831
+      samplingRate: 0.1
+
+  # Logging
+  logging:
+    enabled: true
+    level: "INFO"
+    format: "json" # json | text
+    # Structured logging fields
+    fields:
+      service: ""
+      version: ""
+      environment: ""
+
+  # Custom metrics endpoint
+  customMetrics:
+    enabled: false
+    port: 8081
+    path: /custom-metrics
+
+# ============================================================================
+# SERVICE MESH INTEGRATION (OPTIONAL)
+# ============================================================================
+serviceMesh:
+  enabled: false
+
+  # Consul service mesh
+  consul:
+    enabled: false
+    connectInject: true
+    connectServicePort: "8080"
+
+  # Istio service mesh
+  istio:
+    enabled: false
+    virtualService:
+      enabled: false
+      hosts: []
+      gateway: ""
+    mtls:
+      enabled: false
+      mode: STRICT # STRICT | PERMISSIVE | DISABLE
+
+# ============================================================================
+# NETWORK POLICIES
+# ============================================================================
+networkPolicy:
+  enabled: true
+
+  # Default network policy type
+  policyType:
+    - Ingress
+    - Egress
+
+  # Ingress rules
+  ingress:
+    enabled: true
+    # Allow from Ingress controller
+    fromIngress:
+      enabled: true
+      namespaceSelector:
+        matchLabels:
+          name: ingress-nginx
+    # Allow from specific namespaces
+    fromNamespaces:
+      enabled: false
+      labels: {}
+    # Allow from specific pods
+    fromPods:
+      enabled: false
+      matchLabels: {}
+    # Allow specific ports
+    ports:
+      - port: 8080
+        protocol: TCP
+
+  # Egress rules
+  egress:
+    enabled: true
+    # Allow to DNS
+    toDns:
+      enabled: true
+      port: 53
+    # Allow to Kubernetes API
+    toKubernetesApi:
+      enabled: true
+    # Allow to external services
+    toExternal:
+      enabled: false
+      cidr: []
+    # Allow to specific services
+    toServices:
+      enabled: false
+      namespaceSelector: {}
+      podSelector: {}
+
+# ============================================================================
+# SECURITY POLICIES (POD SECURITY STANDARDS)
+# ============================================================================
+podSecurityPolicy:
+  enabled: false # Deprecated in K8s 1.25, use Pod Security Standards instead
+  name: "restricted"
+
+podSecurityStandards:
+  enabled: true
+  labels:
+    pod-security.kubernetes.io/enforce: "restricted"
+    pod-security.kubernetes.io/audit: "restricted"
+    pod-security.kubernetes.io/warn: "restricted"
+
+# ============================================================================
+# BACKUP & PERSISTENCE (IF NEEDED)
+# ============================================================================
+backup:
+  enabled: false
+
+  # Velero backup configuration
+  velero:
+    enabled: false
+    schedule: "0 2 * * *" # 2am UTC daily
+    retention: "30d"
+
+# ============================================================================
+# COST OPTIMIZATION
+# ============================================================================
+costOptimization:
+  # Request-based autoscaling metrics
+  enableMemoryScaling: true
+  enableCpuScaling: true
+
+  # Spot instances compatibility
+  preferSpotInstances: false
+
+  # Pod priority for eviction (lower = evicted first)
+  priorityForEviction: 100
+
+# ============================================================================
+# DEBUGGING & TROUBLESHOOTING
+# ============================================================================
+debug:
+  enabled: false
+  # Dump values at template render time
+  dumpValues: false
+  # Keep succeeded pods for inspection
+  keepFailedPods: false
+
+# ============================================================================
+# FEATURE FLAGS & EXPERIMENTAL
+# ============================================================================
+features:
+  # Use init containers for setup tasks
+  initContainers:
+    enabled: false
+    containers: []
+
+  # Use sidecar containers
+  sidecars:
+    enabled: false
+    containers: []
+
+  # Use ephemeral containers for debugging
+  ephemeralContainers:
+    enabled: false
+    containers: []
+
+# ============================================================================
+# HIGH AVAILABILITY (HA) CONFIGURATION
+# ============================================================================
+ha:
+  # Topology spread constraints for Multi-AZ/Multi-Host distribution
+  topologySpread:
+    enabled: true
+    host:
+      maxSkew: 1
+      whenUnsatisfiable: ScheduleAnyway
+    zone:
+      maxSkew: 1
+      whenUnsatisfiable: DoNotSchedule
+
+# ============================================================================
+# EXTENDED SECRETS CONFIGURATION
+# ============================================================================
+secrets:
+  # Integration with External Secrets Operator
+  externalSecrets:
+    enabled: false
+    refreshInterval: "1h"
+    # secretStoreName: "spaceup-platform-secret-store"
+    # secretStoreKind: "SecretStore"
+    # targetSecretName: ""
+    data: []
+
+# ============================================================================
+# ENHANCED SERVICE MESH CONFIGURATION
+# ============================================================================
+# ============================================================================
+# FINOPS & GOVERNANCE
+# ============================================================================
+finops:
+  enabled: true
+  costCenter: "platform-engineering"
+  businessUnit: "infrastructure"
+  owner: "devops-team"

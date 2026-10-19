@@ -1,0 +1,79 @@
+image:
+  repository: myacr17911.azurecr.io/config-ingestor
+  # CI replaces this with an immutable version or, preferably, a sha256 digest.
+  tag: REPLACE_WITH_IMMUTABLE_TAG
+  pullPolicy: IfNotPresent
+  requireDigest: false
+
+replicas: 2
+service:
+  port: 8888
+  targetPort: 8888
+ingress:
+  enabled: false
+  className: ""
+  host: ""
+
+resources:
+  requests: { cpu: 250m, memory: 512Mi }
+  limits: { cpu: "1", memory: 1Gi }
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 4
+  targetCPUUtilizationPercentage: 70
+
+configRepository:
+  enabled: true
+  # This must be a protected Git repository reachable from the private AKS network.
+  uri: REPLACE_WITH_PRIVATE_CONFIG_REPOSITORY_URL
+  defaultLabel: main
+  searchPaths: '{application}'
+  credentialsSecret: config-ingestor-git
+  # Private Endpoint CIDR(s) for the Git host. Do not open egress to all 443.
+  egressCidrs: [REPLACE_WITH_PRIVATE_CONFIG_REPOSITORY_CIDR]
+
+externalSecret:
+  enabled: true
+  secretStoreRef: azure-keyvault
+  usernameRemoteKey: config-ingestor-git-username
+  passwordRemoteKey: config-ingestor-git-token
+
+# Consul is an external, private control-plane dependency.  Do not point this
+# at a public load balancer or at a Kubernetes Service that does not exist.
+# The TLS secret values are Base64-encoded PKCS12 files in Azure Key Vault.
+consul:
+  enabled: true
+  host: REPLACE_WITH_PRIVATE_CONSUL_DNS_NAME
+  port: 8501
+  scheme: https
+  acl:
+    secretName: config-ingestor-consul-acl
+    secretKey: token
+    remoteKey: config-ingestor-consul-acl-token
+  tls:
+    secretName: config-ingestor-consul-tls
+    keyStoreKey: keystore.p12
+    keyStorePasswordKey: keystore-password
+    trustStoreKey: truststore.p12
+    trustStorePasswordKey: truststore-password
+    keyStoreRemoteKey: config-ingestor-consul-keystore-p12
+    keyStorePasswordRemoteKey: config-ingestor-consul-keystore-password
+    trustStoreRemoteKey: config-ingestor-consul-truststore-p12
+    trustStorePasswordRemoteKey: config-ingestor-consul-truststore-password
+
+networkPolicy:
+  enabled: true
+  # Private /32 addresses (or tightly scoped CIDRs) for the Consul API VIP.
+  consulEgressCidrs: [REPLACE_WITH_PRIVATE_CONSUL_API_CIDR]
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+monitoring:
+  enabled: true
+  scrapeInterval: 30s
+  # Enable only after the application includes micrometer-registry-prometheus.
+  serviceMonitorEnabled: false

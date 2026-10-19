@@ -1,0 +1,49 @@
+{{- if .Values.velero.enabled -}}
+---
+# Sauvegarde quotidienne complète (Rétention 90 jours)
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: {{ include "platform.fullname" . }}-daily-full
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "0 1 * * *"
+  template:
+    includedNamespaces:
+      - {{ .Release.Namespace }}
+      - "external-secrets-system"
+    ttl: 21600h
+    hooks:
+      resources:
+        - name: pre-backup-hook
+          includedNamespaces:
+            - {{ .Release.Namespace }}
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: postgresql
+          pre:
+            - exec:
+                container: postgresql
+                command:
+                  - /bin/sh
+                  - -c
+                  - "pg_dumpall -U postgres > /tmp/dump.sql"
+                timeout: 5m
+---
+# Sauvegarde incrémentale par heure (Rétention 7 jours)
+apiVersion: velero.io/v1
+kind: Schedule
+metadata:
+  name: {{ include "platform.fullname" . }}-hourly-incremental
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "0 * * * *"
+  template:
+    includedNamespaces:
+      - {{ .Release.Namespace }}
+    includedResources:
+      - configmaps
+      - secrets
+      - services
+    ttl: 168h
+{{- end -}}

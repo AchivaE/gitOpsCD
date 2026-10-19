@@ -1,0 +1,38 @@
+apiVersion: v2
+name: microservice-common
+description: >
+  Production-ready Helm Library Chart for SpaceUp microservices.
+  Provides enterprise-grade templates with security-first defaults, comprehensive observability,
+  RBAC, Pod Security Standards, Network Policies, autoscaling, and complete Kubernetes patterns.
+  Zero implicit behavior - all aspects controlled via explicit values.yaml configuration.
+# This chart exposes named template primitives only. Deployable charts compose them.
+type: library
+version: 1.0.0
+appVersion: "2.0.0"
+
+home: https://github.com/spaceUp-Inovation/spaceup-platform
+icon: https://raw.githubusercontent.com/spaceUp-Inovation/spaceup-platform/main/docs/logo.png
+sources:
+  - https://github.com/spaceUp-Inovation/spaceup-platform/tree/main/charts/common/microservice-common
+
+keywords:
+  - spaceup
+  - library
+  - microservice
+  - kubernetes
+  - helm
+  - security
+  - observability
+  - enterprise
+
+maintainers:
+  - name: "SpaceUp Platform Team"
+    email: "platform@spaceup.org"
+    url: "https://github.com/spaceUp-Inovation/spaceup-platform"
+
+annotations:
+  "artifact.spaceup.org/security-level": "critical"
+  "artifact.spaceup.org/compliance": "pod-security-standards,rbac,network-policies"
+  "charts.helm.sh/type": "library"
+
+dependencies: []

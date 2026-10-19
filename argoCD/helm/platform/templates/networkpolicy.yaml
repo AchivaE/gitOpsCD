@@ -1,0 +1,148 @@
+{{- if .Values.networkPolicy.enabled }}
+# Default Deny All Ingress - whitelist explicitly required traffic
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: spaceup-platform-deny-all-ingress
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress: []  # Empty ingress list = deny all
+
+---
+# Allow Ingress to microservices from Ingress Controller
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: spaceup-microservices-ingress
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: "microservice"
+  policyTypes:
+    - Ingress
+  ingress:
+    # From Ingress Controller (any namespace)
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: "ingress-nginx"
+    # From services within same namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: {{ include "platform.namespace" . }}
+
+---
+# Allow Prometheus scraping
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: spaceup-prometheus-scrape
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: "prometheus"
+      ports:
+        - protocol: TCP
+          port: 8080  # Actuator/metrics port
+
+---
+# Allow DNS resolution
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: spaceup-allow-dns
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# Egress to external services (databases, cache, etc.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: spaceup-egress-external
+  namespace: {{ include "platform.namespace" . }}
+  labels:
+    {{ include "platform.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # PostgreSQL
+    {{- if .Values.postgresql.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: "postgresql"
+      ports:
+        - protocol: TCP
+          port: 5432
+    {{- end }}
+    # Redis
+    {{- if .Values.redis.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: "redis"
+      ports:
+        - protocol: TCP
+          port: 6379
+    {{- end }}
+    # Consul
+    {{- if .Values.consul.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: "consul"
+      ports:
+        - protocol: TCP
+          port: 8500
+        - protocol: TCP
+          port: 8600
+    {{- end }}
+    # Keycloak
+    {{- if .Values.keycloak.enabled }}
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: "keycloak"
+      ports:
+        - protocol: TCP
+          port: 8080
+    {{- end }}
+
+{{- end }}
+

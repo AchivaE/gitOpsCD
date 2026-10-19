@@ -1,0 +1,60 @@
+{{- if .Values.observability.platformAlerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: platform-control-plane
+  labels:
+    app.kubernetes.io/part-of: spaceup-platform
+spec:
+  groups:
+    - name: spaceup.platform.availability
+      rules:
+        - alert: ExternalSecretsOperatorUnavailable
+          expr: 'kube_deployment_spec_replicas{namespace="external-secrets",deployment="external-secrets"} > 0 and kube_deployment_status_replicas_available{namespace="external-secrets",deployment="external-secrets"} < 1'
+          for: 10m
+          labels: { severity: critical, component: external-secrets }
+          annotations:
+            summary: External Secrets Operator has no available replica
+            runbook_url: https://github.com/spaceUp-Inovation/spaceup-platform/blob/main/gitOpsCD/runbooks/OBSERVABILITY.md#external-secrets-operator-unavailable
+        - alert: CertManagerUnavailable
+          expr: 'kube_deployment_spec_replicas{namespace="cert-manager",deployment="cert-manager"} > 0 and kube_deployment_status_replicas_available{namespace="cert-manager",deployment="cert-manager"} < 1'
+          for: 10m
+          labels: { severity: critical, component: cert-manager }
+          annotations:
+            summary: cert-manager has no available controller replica
+            runbook_url: https://github.com/spaceUp-Inovation/spaceup-platform/blob/main/gitOpsCD/runbooks/OBSERVABILITY.md#cert-manager-unavailable
+    - name: spaceup.platform.capacity
+      rules:
+        - alert: PersistentVolumeLowSpace
+          expr: '(kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes) * 100 < {{ .Values.observability.platformAlerts.persistentVolumeWarningPercent }}'
+          for: 30m
+          labels: { severity: warning, component: storage }
+          annotations:
+            summary: Persistent volume has low free space
+            description: 'PVC {{`{{`}} $labels.namespace {{`}}`}}/{{`{{`}} $labels.persistentvolumeclaim {{`}}`}} has less than {{ .Values.observability.platformAlerts.persistentVolumeWarningPercent }}% free space.'
+            runbook_url: https://github.com/spaceUp-Inovation/spaceup-platform/blob/main/gitOpsCD/runbooks/OBSERVABILITY.md#persistent-volume-low-space
+        - alert: PersistentVolumeCriticalSpace
+          expr: '(kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes) * 100 < {{ .Values.observability.platformAlerts.persistentVolumeCriticalPercent }}'
+          for: 10m
+          labels: { severity: critical, component: storage }
+          annotations:
+            summary: Persistent volume is almost full
+            description: 'PVC {{`{{`}} $labels.namespace {{`}}`}}/{{`{{`}} $labels.persistentvolumeclaim {{`}}`}} has less than {{ .Values.observability.platformAlerts.persistentVolumeCriticalPercent }}% free space.'
+            runbook_url: https://github.com/spaceUp-Inovation/spaceup-platform/blob/main/gitOpsCD/runbooks/OBSERVABILITY.md#persistent-volume-low-space
+    - name: spaceup.platform.certificates
+      rules:
+        - alert: CertificateExpiringSoon
+          expr: 'certmanager_certificate_expiration_timestamp_seconds - time() < {{ mul .Values.observability.platformAlerts.certificateWarningDays 86400 }} and certmanager_certificate_expiration_timestamp_seconds - time() >= {{ mul .Values.observability.platformAlerts.certificateCriticalDays 86400 }}'
+          for: 1h
+          labels: { severity: warning, component: cert-manager }
+          annotations:
+            summary: Certificate expires within {{ .Values.observability.platformAlerts.certificateWarningDays }} days
+            runbook_url: https://github.com/spaceUp-Inovation/spaceup-platform/blob/main/gitOpsCD/runbooks/OBSERVABILITY.md#certificate-expiring-soon
+        - alert: CertificateExpiringCritical
+          expr: 'certmanager_certificate_expiration_timestamp_seconds - time() < {{ mul .Values.observability.platformAlerts.certificateCriticalDays 86400 }}'
+          for: 15m
+          labels: { severity: critical, component: cert-manager }
+          annotations:
+            summary: Certificate expires within {{ .Values.observability.platformAlerts.certificateCriticalDays }} days
+            runbook_url: https://github.com/spaceUp-Inovation/spaceup-platform/blob/main/gitOpsCD/runbooks/OBSERVABILITY.md#certificate-expiring-soon
+{{- end }}

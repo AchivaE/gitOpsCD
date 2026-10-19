@@ -1,0 +1,82 @@
+image:
+  repository: myacr17911.azurecr.io/gateway-ingestor
+  tag: REPLACE_WITH_IMMUTABLE_TAG
+  pullPolicy: IfNotPresent
+  requireDigest: false
+
+replicas: 2
+service: { port: 80, targetPort: 9999 }
+ingress:
+  enabled: true
+  className: ""
+  host: REPLACE_WITH_PUBLIC_GATEWAY_HOSTNAME
+  tlsSecretName: gateway-ingestor-tls
+  tlsEnabled: true
+  annotations: {}
+
+certificate:
+  enabled: true
+  issuerName: letsencrypt-staging
+
+resources:
+  requests: { cpu: 500m, memory: 768Mi }
+  limits: { cpu: "2", memory: 1536Mi }
+autoscaling: { enabled: true, minReplicas: 2, maxReplicas: 10, targetCPUUtilizationPercentage: 65 }
+podDisruptionBudget: { enabled: true, minAvailable: 1 }
+
+bootstrap:
+  configServerUrl: http://config-ingestor:8888
+  configFailFast: true
+
+# Both control-plane endpoints must be private. Binary stores are supplied to
+# Azure Key Vault as Base64-encoded PKCS12 files and decoded by ESO.
+consul:
+  enabled: true
+  host: REPLACE_WITH_PRIVATE_CONSUL_DNS_NAME
+  port: 8501
+  scheme: https
+  acl:
+    secretName: gateway-ingestor-consul-acl
+    secretKey: token
+    remoteKey: gateway-ingestor-consul-acl-token
+  tls:
+    secretName: gateway-ingestor-consul-tls
+    keyStoreKey: keystore.p12
+    keyStorePasswordKey: keystore-password
+    trustStoreKey: truststore.p12
+    trustStorePasswordKey: truststore-password
+    keyStoreRemoteKey: gateway-ingestor-consul-keystore-p12
+    keyStorePasswordRemoteKey: gateway-ingestor-consul-keystore-password
+    trustStoreRemoteKey: gateway-ingestor-consul-truststore-p12
+    trustStorePasswordRemoteKey: gateway-ingestor-consul-truststore-password
+
+vault:
+  enabled: true
+  uri: REPLACE_WITH_PRIVATE_VAULT_HTTPS_URI
+  kubernetesRole: gateway-ingestor
+  kubernetesAuthPath: kubernetes
+  tls:
+    secretName: gateway-ingestor-vault-tls
+    trustStoreKey: truststore.p12
+    trustStorePasswordKey: truststore-password
+    trustStoreRemoteKey: gateway-ingestor-vault-truststore-p12
+    trustStorePasswordRemoteKey: gateway-ingestor-vault-truststore-password
+
+externalSecrets:
+  enabled: true
+  secretStoreRef: azure-keyvault
+
+# Explicitly controlled outbound target namespaces. Add a namespace only when
+# the gateway has a documented route to services in it.
+networkPolicy:
+  enabled: true
+  ingressControllerNamespace: kube-system
+  backendNamespaces: [spaceup]
+  consulEgressCidrs: [REPLACE_WITH_PRIVATE_CONSUL_API_CIDR]
+  vaultEgressCidrs: [REPLACE_WITH_PRIVATE_VAULT_API_CIDR]
+
+monitoring:
+  enabled: true
+  scrapeInterval: 30s
+  # Enable only after the application includes micrometer-registry-prometheus.
+  serviceMonitorEnabled: false

@@ -1,0 +1,78 @@
+name: GitOps chart validation
+
+on:
+  pull_request:
+    paths:
+      - 'gitOpsCD/argoCD/**'
+      - 'gitOpsCD/pipelines/gitops/**'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: Service to promote
+        required: true
+        type: choice
+        options: [config-ingestor, gateway-ingestor]
+      environment:
+        description: Target lifecycle environment
+        required: true
+        type: choice
+        options: [dev, staging, prod]
+      provider:
+        description: Target Kubernetes provider profile
+        required: true
+        type: choice
+        options: [local, azure, aws]
+      imageDigest:
+        description: Verified OCI sha256 digest
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  local-profile:
+    name: Render portable local profiles
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+      # This GitHub Action only installs the Helm binary; it does not connect
+      # the workflow to Azure or to any cloud account.
+      - uses: azure/setup-helm@v5
+        with:
+          version: v3.18.4
+      - name: Validate Argo CD source layout
+        shell: bash
+        run: bash gitOpsCD/pipelines/gitops/validate-argo-layout.sh
+      - name: Lint and render local profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          helm lint gitOpsCD/argoCD/helm/services/config-ingestor -f gitOpsCD/argoCD/helm/services/config-ingestor/values-local.yaml
+          helm template config-ingestor gitOpsCD/argoCD/helm/services/config-ingestor -n spaceup-local -f gitOpsCD/argoCD/helm/services/config-ingestor/values-local.yaml >/dev/null
+          helm lint gitOpsCD/argoCD/helm/services/gateway-ingestor -f gitOpsCD/argoCD/helm/services/gateway-ingestor/values-local.yaml
+          helm template gateway-ingestor gitOpsCD/argoCD/helm/services/gateway-ingestor -n spaceup-local -f gitOpsCD/argoCD/helm/services/gateway-ingestor/values-local.yaml >/dev/null
+          helm lint gitOpsCD/argoCD/helm/cluster-addons -f gitOpsCD/argoCD/helm/cluster-addons/values-local.yaml
+          helm template cluster-addons gitOpsCD/argoCD/helm/cluster-addons -n platform-system -f gitOpsCD/argoCD/helm/cluster-addons/values-local.yaml >/dev/null
+
+  promotion:
+    if: github.event_name == 'workflow_dispatch'
+    name: Validate immutable promotion
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: azure/setup-helm@v5
+        with:
+          version: v3.18.4
+      - name: Validate promoted image reference
+        shell: bash
+        env:
+          PATCH_OUT: image-promotion.patch
+        run: bash gitOpsCD/pipelines/gitops/validate-promotion.sh '${{ inputs.service }}' '${{ inputs.environment }}' '${{ inputs.provider }}' '${{ inputs.imageDigest }}'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: image-promotion-${{ inputs.service }}-${{ inputs.environment }}
+          path: image-promotion.patch
+          if-no-files-found: error

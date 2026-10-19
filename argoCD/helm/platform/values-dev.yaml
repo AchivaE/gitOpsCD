@@ -1,0 +1,85 @@
+# ============================================================================
+# SpaceUp Platform - Development Environment Override
+# ============================================================================
+global:
+  environment: "development"
+  namespace: "spaceup-dev"
+  domain: "spaceup.local"
+  imagePullPolicy: Always
+
+consul:
+  enabled: false
+
+# Dev : mots de passe gérés via existingSecret populé manuellement
+# ou via un chart de seed (helm install --set postgresql.auth.password=XXX)
+postgresql:
+  auth:
+    username: dev_user
+    existingSecret: postgres-credentials
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: password
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi
+
+redis:
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 2Gi
+  replica:
+    replicaCount: 0
+
+keycloak:
+  auth:
+    adminUser: admin
+    existingSecret: keycloak-admin
+    passwordSecretKey: admin-password
+  replicaCount: 1
+
+prometheus:
+  # Owned once per cluster by helm/cluster-addons. Do not install a second
+  # Prometheus Operator stack per application environment.
+  enabled: false
+  prometheusSpec:
+    retention: 7d
+    resources:
+      requests:
+        memory: 512Mi
+        cpu: 250m
+      limits:
+        memory: 1Gi
+        cpu: 500m
+    persistence:
+      enabled: true
+      size: 10Gi
+
+grafana:
+  # Grafana is likewise owned by cluster-addons.
+  enabled: false
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  persistence:
+    enabled: true
+    size: 2Gi
+
+cert-manager:
+  enabled: false
+
+networkPolicy:
+  enabled: false
+
+podDisruptionBudgets:
+  enabled: false
+
+resourceQuota:
+  enabled: false
+
+backup:
+  enabled: false

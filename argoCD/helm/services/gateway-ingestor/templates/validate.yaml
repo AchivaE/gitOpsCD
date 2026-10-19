@@ -1,0 +1,38 @@
+{{- if hasPrefix "REPLACE_WITH_" .Values.image.tag }}
+{{- fail "image.tag must be an immutable image tag or digest promoted by CI" }}
+{{- end }}
+{{- if and .Values.image.requireDigest (not (regexMatch "^sha256:[a-f0-9]{64}$" .Values.image.tag)) }}
+{{- fail "production image.tag must be a sha256 digest promoted by CI" }}
+{{- end }}
+{{- if and .Values.ingress.enabled (hasPrefix "REPLACE_WITH_" .Values.ingress.host) }}
+{{- fail "ingress.host must be a real hostname when ingress.enabled=true" }}
+{{- end }}
+{{- if .Values.consul.enabled }}
+{{- $consulHost := required "consul.host must name the private Consul HTTPS endpoint when consul.enabled=true" .Values.consul.host }}
+{{- if hasPrefix "REPLACE_WITH_" $consulHost }}
+{{- fail "consul.host must be replaced with the private Consul DNS name before Argo CD can deploy gateway-ingestor" }}
+{{- end }}
+{{- if ne .Values.consul.scheme "https" }}
+{{- fail "Consul must use HTTPS in this production chart" }}
+{{- end }}
+{{- end }}
+{{- if .Values.vault.enabled }}
+{{- $vaultUri := required "vault.uri must name the private Vault HTTPS endpoint when vault.enabled=true" .Values.vault.uri }}
+{{- if or (hasPrefix "REPLACE_WITH_" $vaultUri) (not (hasPrefix "https://" $vaultUri)) }}
+{{- fail "vault.uri must be a private HTTPS endpoint when vault.enabled=true" }}
+{{- end }}
+{{- end }}
+{{- if and .Values.networkPolicy.enabled .Values.consul.enabled }}
+{{- range .Values.networkPolicy.consulEgressCidrs }}
+{{- if hasPrefix "REPLACE_WITH_" . }}
+{{- fail "networkPolicy.consulEgressCidrs must contain only the private Consul API CIDR(s)" }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- if and .Values.networkPolicy.enabled .Values.vault.enabled }}
+{{- range .Values.networkPolicy.vaultEgressCidrs }}
+{{- if hasPrefix "REPLACE_WITH_" . }}
+{{- fail "networkPolicy.vaultEgressCidrs must contain only the private Vault API CIDR(s)" }}
+{{- end }}
+{{- end }}
+{{- end }}

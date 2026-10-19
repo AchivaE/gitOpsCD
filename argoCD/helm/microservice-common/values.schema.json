@@ -1,0 +1,236 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Values Schema for SpaceUp Microservice Common Library Chart",
+  "type": "object",
+  "properties": {
+    "global": {
+      "type": "object",
+      "properties": {
+        "appName": {
+          "type": "string"
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "production",
+            "staging",
+            "development"
+          ]
+        },
+        "region": {
+          "type": "string"
+        },
+        "imageRegistry": {
+          "type": "string"
+        },
+        "localisation": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "zone": {
+              "type": "string"
+            },
+            "tier": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "image": {
+      "type": "object",
+      "properties": {
+        "repository": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "pullPolicy": {
+          "type": "string",
+          "enum": [
+            "Always",
+            "IfNotPresent",
+            "Never"
+          ]
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "requests": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string",
+              "pattern": "^[0-9]+m?$"
+            },
+            "memory": {
+              "type": "string",
+              "pattern": "^[0-9]+(Mi|Gi|Ki|M|G|K)$"
+            }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "properties": {
+            "cpu": {
+              "type": "string",
+              "pattern": "^[0-9]+m?$"
+            },
+            "memory": {
+              "type": "string",
+              "pattern": "^[0-9]+(Mi|Gi|Ki|M|G|K)$"
+            }
+          }
+        }
+      }
+    },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "ha": {
+      "type": "object",
+      "properties": {
+        "topologySpread": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "host": {
+              "type": "object",
+              "properties": {
+                "maxSkew": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "whenUnsatisfiable": {
+                  "type": "string",
+                  "enum": [
+                    "ScheduleAnyway",
+                    "DoNotSchedule"
+                  ]
+                }
+              }
+            },
+            "zone": {
+              "type": "object",
+              "properties": {
+                "maxSkew": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "whenUnsatisfiable": {
+                  "type": "string",
+                  "enum": [
+                    "ScheduleAnyway",
+                    "DoNotSchedule"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "secrets": {
+      "type": "object",
+      "properties": {
+        "externalSecrets": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "refreshInterval": {
+              "type": "string"
+            },
+            "secretStoreName": {
+              "type": "string"
+            },
+            "secretStoreKind": {
+              "type": "string"
+            },
+            "targetSecretName": {
+              "type": "string"
+            },
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "secretKey",
+                  "remoteRef"
+                ],
+                "properties": {
+                  "secretKey": {
+                    "type": "string"
+                  },
+                  "remoteRef": {
+                    "type": "object",
+                    "required": [
+                      "key"
+                    ],
+                    "properties": {
+                      "key": {
+                        "type": "string"
+                      },
+                      "property": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "serviceMesh": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "istio": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "mtls": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "boolean"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "STRICT",
+                    "PERMISSIVE",
+                    "DISABLE"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

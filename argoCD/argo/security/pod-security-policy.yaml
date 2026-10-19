@@ -1,0 +1,76 @@
+apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: spaceup-restricted
+  labels:
+    app.kubernetes.io/name: spaceup-platform
+spec:
+  privileged: false
+  allowPrivilegeEscalation: false
+  requiredDropCapabilities:
+    - ALL
+  volumes:
+    - configMap
+    - emptyDir
+    - projected
+    - secret
+    - downwardAPI
+    - persistentVolumeClaim
+  hostNetwork: false
+  hostIPC: false
+  hostPID: false
+  runAsUser:
+    rule: MustRunAsNonRoot
+  seLinux:
+    rule: MustRunAs
+    seLinuxOptions:
+      level: s0:c123,c456
+  supplementalGroups:
+    rule: MustRunAs
+    ranges:
+      - min: 1000
+        max: 65535
+  fsGroup:
+    rule: MustRunAs
+    ranges:
+      - min: 1000
+        max: 65535
+  readOnlyRootFilesystem: true
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: spaceup-psp-restricted
+  labels:
+    app.kubernetes.io/name: spaceup-platform
+rules:
+  - apiGroups:
+      - policy
+    resources:
+      - podsecuritypolicies
+    verbs:
+      - use
+    resourceNames:
+      - spaceup-restricted
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: spaceup-psp-restricted
+  labels:
+    app.kubernetes.io/name: spaceup-platform
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: spaceup-psp-restricted
+subjects:
+  - kind: ServiceAccount
+    name: default
+    namespace: spaceup
+  - kind: ServiceAccount
+    name: default
+    namespace: spaceup-dev
+  - kind: ServiceAccount
+    name: default
+    namespace: spaceup-staging
+

@@ -1,0 +1,48 @@
+suite: Topology Spread Constraints rendering
+templates:
+  - templates/deployment.yaml
+values:
+  - values.yaml
+
+tests:
+  - it: should render default topologySpreadConstraints when enabled
+    set:
+      ha:
+        topologySpread:
+          enabled: true
+    asserts:
+      - isSubset:
+          path: spec.template.spec.topologySpreadConstraints[0]
+          content:
+            topologyKey: "kubernetes.io/hostname"
+            whenUnsatisfiable: ScheduleAnyway
+      - isSubset:
+          path: spec.template.spec.topologySpreadConstraints[1]
+          content:
+            topologyKey: "topology.kubernetes.io/zone"
+            whenUnsatisfiable: DoNotSchedule
+
+  - it: should override whenUnsatisfiable for zone
+    set:
+      ha:
+        topologySpread:
+          enabled: true
+          zone:
+            whenUnsatisfiable: ScheduleAnyway
+    asserts:
+      - equal:
+          path: spec.template.spec.topologySpreadConstraints[1].whenUnsatisfiable
+          value: ScheduleAnyway
+
+  - it: should not render when disabled
+    set:
+      ha:
+        topologySpread:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 1
+      - failedTemplate: {} # Deployment should still render but without constraints
+        # Actually isNotExists check
+      - isNotExists:
+          path: spec.template.spec.topologySpreadConstraints

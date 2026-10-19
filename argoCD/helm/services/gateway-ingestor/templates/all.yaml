@@ -1,0 +1,323 @@
+{{- if and .Values.externalSecrets.enabled .Values.consul.enabled }}
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}-consul-acl
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: {{ .Values.externalSecrets.secretStoreRef }}
+    kind: ClusterSecretStore
+  target:
+    name: {{ .Values.consul.acl.secretName }}
+    creationPolicy: Owner
+  data:
+    - secretKey: {{ .Values.consul.acl.secretKey }}
+      remoteRef:
+        key: {{ .Values.consul.acl.remoteKey | quote }}
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}-consul-tls
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: {{ .Values.externalSecrets.secretStoreRef }}
+    kind: ClusterSecretStore
+  target:
+    name: {{ .Values.consul.tls.secretName }}
+    creationPolicy: Owner
+  data:
+    - secretKey: {{ .Values.consul.tls.keyStoreKey }}
+      remoteRef:
+        key: {{ .Values.consul.tls.keyStoreRemoteKey | quote }}
+        decodingStrategy: Base64
+    - secretKey: {{ .Values.consul.tls.keyStorePasswordKey }}
+      remoteRef:
+        key: {{ .Values.consul.tls.keyStorePasswordRemoteKey | quote }}
+    - secretKey: {{ .Values.consul.tls.trustStoreKey }}
+      remoteRef:
+        key: {{ .Values.consul.tls.trustStoreRemoteKey | quote }}
+        decodingStrategy: Base64
+    - secretKey: {{ .Values.consul.tls.trustStorePasswordKey }}
+      remoteRef:
+        key: {{ .Values.consul.tls.trustStorePasswordRemoteKey | quote }}
+{{- end }}
+{{- if and .Values.externalSecrets.enabled .Values.vault.enabled }}
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}-vault-tls
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: {{ .Values.externalSecrets.secretStoreRef }}
+    kind: ClusterSecretStore
+  target:
+    name: {{ .Values.vault.tls.secretName }}
+    creationPolicy: Owner
+  data:
+    - secretKey: {{ .Values.vault.tls.trustStoreKey }}
+      remoteRef:
+        key: {{ .Values.vault.tls.trustStoreRemoteKey | quote }}
+        decodingStrategy: Base64
+    - secretKey: {{ .Values.vault.tls.trustStorePasswordKey }}
+      remoteRef:
+        key: {{ .Values.vault.tls.trustStorePasswordRemoteKey | quote }}
+{{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}
+  labels: {{- include "gateway-ingestor.labels" . | nindent 4 }}
+# Required only for Vault Kubernetes authentication; no broad Kubernetes RBAC is granted.
+automountServiceAccountToken: {{ .Values.vault.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}
+  labels: {{- include "gateway-ingestor.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.autoscaling.minReplicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  selector:
+    matchLabels: {{- include "gateway-ingestor.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "gateway-ingestor.selectorLabels" . | nindent 8 }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /actuator/prometheus
+        prometheus.io/port: "9999"
+    spec:
+      serviceAccountName: {{ include "gateway-ingestor.fullname" . }}
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
+      terminationGracePeriodSeconds: 45
+      containers:
+        - name: gateway-ingestor
+          image: "{{ include "gateway-ingestor.image" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          ports: [{ name: http, containerPort: 9999 }]
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ ternary "prod" "dev,docker" .Values.vault.enabled | quote }}
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: health,info
+            - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
+              value: never
+            - name: CONFIG_SERVER_URL
+              value: {{ .Values.bootstrap.configServerUrl | quote }}
+            - name: SPRING_CLOUD_CONFIG_FAILFAST
+              value: {{ .Values.bootstrap.configFailFast | quote }}
+            - name: SPRING_CLOUD_CONSUL_ENABLED
+              value: {{ .Values.consul.enabled | quote }}
+{{- if .Values.consul.enabled }}
+            - name: SPRING_CLOUD_CONSUL_HOST
+              value: {{ .Values.consul.host | quote }}
+            - name: SPRING_CLOUD_CONSUL_PORT
+              value: {{ .Values.consul.port | quote }}
+            - name: SPRING_CLOUD_CONSUL_SCHEME
+              value: {{ .Values.consul.scheme | quote }}
+            - name: SPRING_CLOUD_CONSUL_DISCOVERY_ACL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.consul.acl.secretName }}
+                  key: {{ .Values.consul.acl.secretKey }}
+            - name: SPRING_CLOUD_CONSUL_TLS_KEY_STORE_PATH
+              value: file:/var/run/consul-tls/{{ .Values.consul.tls.keyStoreKey }}
+            - name: SPRING_CLOUD_CONSUL_TLS_KEY_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.consul.tls.secretName }}
+                  key: {{ .Values.consul.tls.keyStorePasswordKey }}
+            - name: SPRING_CLOUD_CONSUL_TLS_TRUST_STORE_PATH
+              value: file:/var/run/consul-tls/{{ .Values.consul.tls.trustStoreKey }}
+            - name: SPRING_CLOUD_CONSUL_TLS_TRUST_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.consul.tls.secretName }}
+                  key: {{ .Values.consul.tls.trustStorePasswordKey }}
+{{- end }}
+            - name: SPRING_CLOUD_VAULT_ENABLED
+              value: {{ .Values.vault.enabled | quote }}
+{{- if .Values.vault.enabled }}
+            - name: VAULT_URI
+              value: {{ .Values.vault.uri | quote }}
+            - name: SPRING_CLOUD_VAULT_AUTHENTICATION
+              value: KUBERNETES
+            - name: SPRING_CLOUD_VAULT_KUBERNETES_ROLE
+              value: {{ .Values.vault.kubernetesRole | quote }}
+            - name: SPRING_CLOUD_VAULT_KUBERNETES_KUBERNETES_PATH
+              value: {{ .Values.vault.kubernetesAuthPath | quote }}
+            - name: SPRING_CLOUD_VAULT_SSL_TRUST_STORE
+              value: file:/var/run/vault-tls/{{ .Values.vault.tls.trustStoreKey }}
+            - name: SPRING_CLOUD_VAULT_SSL_TRUST_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.vault.tls.secretName }}
+                  key: {{ .Values.vault.tls.trustStorePasswordKey }}
+            - name: SPRING_CLOUD_VAULT_SSL_TRUST_STORE_TYPE
+              value: PKCS12
+{{- end }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          startupProbe: { httpGet: { path: /actuator/health, port: http }, failureThreshold: 30, periodSeconds: 10 }
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: http }, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 3 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: http }, periodSeconds: 15, timeoutSeconds: 3, failureThreshold: 3 }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+{{- if .Values.consul.enabled }}
+            - { name: consul-tls, mountPath: /var/run/consul-tls, readOnly: true }
+{{- end }}
+{{- if .Values.vault.enabled }}
+            - { name: vault-tls, mountPath: /var/run/vault-tls, readOnly: true }
+{{- end }}
+      volumes:
+        - { name: tmp, emptyDir: { sizeLimit: 256Mi } }
+{{- if .Values.consul.enabled }}
+        - name: consul-tls
+          secret:
+            secretName: {{ .Values.consul.tls.secretName }}
+{{- end }}
+{{- if .Values.vault.enabled }}
+        - name: vault-tls
+          secret:
+            secretName: {{ .Values.vault.tls.secretName }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}
+  labels: {{- include "gateway-ingestor.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "gateway-ingestor.selectorLabels" . | nindent 4 }}
+  ports: [{ name: http, port: {{ .Values.service.port }}, targetPort: http }]
+---
+{{- if .Values.ingress.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}
+  annotations:
+{{- with .Values.ingress.annotations }}
+{{- toYaml . | nindent 4 }}
+{{- end }}
+{{- if .Values.certificate.enabled }}
+    cert-manager.io/cluster-issuer: {{ .Values.certificate.issuerName | quote }}
+{{- end }}
+spec:
+{{- with .Values.ingress.className }}
+  ingressClassName: {{ . }}
+{{- end }}
+{{- if .Values.ingress.tlsEnabled }}
+  tls: [{ hosts: [{{ .Values.ingress.host | quote }}], secretName: {{ .Values.ingress.tlsSecretName }} }]
+{{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths: [{ path: /, pathType: Prefix, backend: { service: { name: {{ include "gateway-ingestor.fullname" . }}, port: { name: http } } } }]
+{{- end }}
+---
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: {{ include "gateway-ingestor.fullname" . }} }
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels: {{- include "gateway-ingestor.selectorLabels" . | nindent 6 }}
+{{- end }}
+{{- if .Values.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: {{ include "gateway-ingestor.fullname" . }} }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: {{ include "gateway-ingestor.fullname" . }} }
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }} } } }]
+{{- end }}
+{{- if .Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: {{ include "gateway-ingestor.fullname" . }} }
+spec:
+  podSelector:
+    matchLabels: {{- include "gateway-ingestor.selectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ .Values.networkPolicy.ingressControllerNamespace }} }
+      ports: [{ protocol: TCP, port: 9999 }]
+  egress:
+    - to:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
+          podSelector: { matchLabels: { k8s-app: kube-dns } }
+      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+    - to:
+        - podSelector:
+            matchLabels: { app.kubernetes.io/name: config-ingestor }
+      ports: [{ protocol: TCP, port: 8888 }]
+{{- if .Values.consul.enabled }}
+    - to:
+{{- range .Values.networkPolicy.consulEgressCidrs }}
+        - ipBlock: { cidr: {{ . | quote }} }
+{{- end }}
+      ports: [{ protocol: TCP, port: {{ .Values.consul.port }} }]
+{{- end }}
+{{- if .Values.vault.enabled }}
+    - to:
+{{- range .Values.networkPolicy.vaultEgressCidrs }}
+        - ipBlock: { cidr: {{ . | quote }} }
+{{- end }}
+      ports: [{ protocol: TCP, port: 8200 }]
+{{- end }}
+    - to:
+        - namespaceSelector: {}
+      ports: [{ protocol: TCP, port: 8080 }, { protocol: TCP, port: 8087 }, { protocol: TCP, port: 8091 }]
+{{- end }}
+---
+{{- if and .Values.monitoring.enabled .Values.monitoring.serviceMonitorEnabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}
+  labels: {{- include "gateway-ingestor.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{- include "gateway-ingestor.selectorLabels" . | nindent 6 }}
+  endpoints: [{ port: http, path: /actuator/prometheus, interval: {{ .Values.monitoring.scrapeInterval }} }]
+---
+{{- end }}
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "gateway-ingestor.fullname" . }}
+  labels: {{- include "gateway-ingestor.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: gateway-ingestor.availability
+      rules:
+        - alert: GatewayIngestorUnavailable
+          expr: 'kube_deployment_spec_replicas{namespace="{{ .Release.Namespace }}",deployment="{{ include "gateway-ingestor.fullname" . }}"} > 0 and kube_deployment_status_replicas_available{namespace="{{ .Release.Namespace }}",deployment="{{ include "gateway-ingestor.fullname" . }}"} < 1'
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Gateway Ingestor has no available replicas
+            description: Public API gateway is unavailable in namespace {{ .Release.Namespace }}.
+{{- end }}

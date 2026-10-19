@@ -1,0 +1,13 @@
+# AWS Load Balancer Controller + AWS Secrets Manager layer.
+# TLS can be terminated by ACM at the ALB; set certificate.enabled=true only
+# when cert-manager and an appropriate DNS/HTTP01 solver are installed.
+ingress:
+  className: alb
+  tlsEnabled: false
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/target-type: ip
+certificate:
+  enabled: false
+externalSecrets:
+  secretStoreRef: aws-secrets-manager

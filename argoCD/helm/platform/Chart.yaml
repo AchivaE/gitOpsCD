@@ -1,0 +1,91 @@
+apiVersion: v2
+name: platform
+description: "Umbrella chart for the spaceUP platform — orchestre les sous-charts (loki, velero, gatekeeper, consul, postgresql, external-secrets)."
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - platform
+  - umbrella
+  - monitoring
+  - backup
+  - security
+
+home: "https://github.com/spaceUp-Inovation/spaceUP-Project"
+
+sources:
+  - "https://github.com/spaceUp-Inovation/spaceUP-Project"
+
+maintainers:
+  - name: SpaceUp Platform Team
+    email: platform@spaceup.org
+
+icon: "https://raw.githubusercontent.com/spaceUp-Inovation/spaceup-platform/main/docs/logo.png"
+
+annotations:
+  chart-type: "umbrella"
+
+dependencies:
+
+  # ---------------- Monitoring ----------------
+  - name: loki
+    version: "6.24.0"
+    repository: "https://grafana.github.io/helm-charts"
+    condition: loki.enabled
+    tags:
+      - monitoring
+
+  - name: kube-prometheus-stack
+    version: "68.4.0"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: prometheus.enabled
+
+  # ---------------- Backup ----------------
+  - name: velero
+    version: "8.1.0"
+    repository: "https://vmware-tanzu.github.io/helm-charts"
+    condition: velero.enabled
+    tags:
+      - backup
+
+  # ---------------- Policy ----------------
+  - name: gatekeeper
+    version: "3.18.1"
+    repository: "https://open-policy-agent.github.io/gatekeeper/charts"
+    condition: gatekeeper.enabled
+    tags:
+      - policy
+
+  # ---------------- Service Discovery ----------------
+  - name: consul
+    version: "1.5.1"
+    repository: "https://helm.releases.hashicorp.com"
+    condition: consul.enabled
+    tags:
+      - service-discovery
+
+  # ---------------- Database ----------------
+  - name: postgresql
+    version: "15.5.38"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: postgresql.enabled
+    tags:
+      - database
+
+  - name: redis
+    version: "20.6.0"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: redis.enabled
+
+  # ---------------- Identity ----------------
+  - name: keycloak
+    version: "24.4.6"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: keycloak.enabled
+
+  # ---------------- Certificates ----------------
+  - name: cert-manager
+    version: "v1.15.3"
+    repository: "https://charts.jetstack.io"
+    condition: cert-manager.enabled

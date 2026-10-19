@@ -1,0 +1,79 @@
+# GitOps image promotion only. This pipeline never builds, scans, signs, or
+# pushes a container image; those actions belong to the service CI pipeline.
+trigger: none
+pr: none
+
+parameters:
+  - name: service
+    displayName: Service to promote
+    type: string
+    default: config-ingestor
+    values: [config-ingestor, gateway-ingestor]
+  - name: environment
+    displayName: Target environment
+    type: string
+    default: dev
+    values: [dev, staging, prod]
+  - name: provider
+    displayName: Target Kubernetes provider profile
+    type: string
+    default: azure
+    values: [local, azure, aws]
+  - name: imageDigest
+    displayName: Verified OCI image digest (sha256:...)
+    type: string
+    default: ''
+  - name: createPullRequest
+    displayName: Create a reviewed pull request (false produces only a patch)
+    type: boolean
+    default: false
+
+pool:
+  vmImage: ubuntu-22.04
+
+variables:
+  chartPath: gitOpsCD/argoCD/helm/services/${{ parameters.service }}
+  valuesFile: gitOpsCD/argoCD/helm/services/${{ parameters.service }}/values-${{ parameters.environment }}.yaml
+
+steps:
+  - checkout: self
+    persistCredentials: true
+    fetchDepth: 0
+
+  - bash: |
+      set -euo pipefail
+      bash gitOpsCD/pipelines/gitops/validate-argo-layout.sh
+    displayName: Validate Argo CD source layout
+
+  - bash: |
+      set -euo pipefail
+      bash gitOpsCD/pipelines/gitops/validate-promotion.sh \
+        '${{ parameters.service }}' \
+        '${{ parameters.environment }}' \
+        '${{ parameters.provider }}' \
+        '${{ parameters.imageDigest }}'
+    displayName: Validate immutable image promotion
+
+  - publish: image-promotion.patch
+    artifact: image-promotion-${{ parameters.service }}-${{ parameters.environment }}
+    displayName: Publish reviewable promotion patch
+
+  - ${{ if eq(parameters.createPullRequest, true) }}:
+    - bash: |
+        set -euo pipefail
+        branch="promotion/${{ parameters.service }}/${{ parameters.environment }}/$(Build.BuildId)"
+        git config user.name 'spaceup-gitops-promotion[bot]'
+        git config user.email 'spaceup-gitops-promotion@users.noreply.azure.com'
+        git switch -c "$branch"
+        git add "$(valuesFile)"
+        git commit -m "chore(gitops): promote ${{ parameters.service }} to ${{ parameters.environment }}"
+        git push origin "HEAD:$branch"
+        az repos pr create \
+          --source-branch "$branch" \
+          --target-branch main \
+          --title "Promote ${{ parameters.service }} to ${{ parameters.environment }}" \
+          --description "Validated immutable OCI digest: ${{ parameters.imageDigest }}" \
+          --auto-complete false
+      env:
+        AZURE_DEVOPS_EXT_PAT: $(System.AccessToken)
+      displayName: Create promotion pull request

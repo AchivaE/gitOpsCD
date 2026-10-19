@@ -1,0 +1,47 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: spaceup-platform-staging
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  generators:
+    - git:
+        repoURL: https://github.com/spaceUp-Inovation/spaceup-platform.git
+        revision: main
+        directories:
+          - path: gitOpsCD/argoCD/helm/services/*
+  template:
+    metadata:
+      name: "staging-{{ path.basename }}"
+      labels:
+        environment: staging
+        app.kubernetes.io/name: "{{ path.basename }}"
+    spec:
+      project: spaceup-platform-staging
+      source:
+        repoURL: https://github.com/spaceUp-Inovation/spaceup-platform.git
+        path: "{{ path }}"
+        targetRevision: main
+        helm:
+          valueFiles: [values.yaml, values-azure.yaml, values-staging.yaml]
+          version: v3
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: spaceup-staging
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions:
+          - CreateNamespace=true
+          - PrunePropagationPolicy=foreground
+          - RespectIgnoreDifferences=true
+          - ServerSideApply=true
+          - SkipSchemaValidation=false
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers: [/spec/replicas]
+        - group: apiextensions.k8s.io
+          kind: CustomResourceDefinition
+          jsonPointers: [/spec/conversion/webhook/clientConfig/caBundle]

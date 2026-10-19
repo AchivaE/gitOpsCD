@@ -1,0 +1,4 @@
+# Azure-specific layer. Supply real private endpoints and Key Vault references
+# through a non-committed environment values file or Argo CD parameters.
+externalSecret:
+  secretStoreRef: azure-keyvault

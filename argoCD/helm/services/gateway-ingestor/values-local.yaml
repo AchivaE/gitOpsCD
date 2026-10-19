@@ -1,0 +1,28 @@
+# Portable local-cluster profile. No cloud ingress, ESO, Consul or Vault is
+# required; access the service with `kubectl port-forward service/gateway-ingestor 8080:80`.
+image:
+  repository: gateway-ingestor
+  tag: local
+  pullPolicy: IfNotPresent
+replicas: 1
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+ingress:
+  enabled: false
+certificate:
+  enabled: false
+bootstrap:
+  configServerUrl: http://config-ingestor:8888
+  configFailFast: false
+consul:
+  enabled: false
+vault:
+  enabled: false
+externalSecrets:
+  enabled: false
+networkPolicy:
+  enabled: false
+monitoring:
+  enabled: false

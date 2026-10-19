@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-addons-staging
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+spec:
+  project: spaceup-cluster-addons
+  source:
+    repoURL: https://github.com/spaceUp-Inovation/spaceup-platform.git
+    path: gitOpsCD/argoCD/helm/cluster-addons
+    targetRevision: main
+    helm:
+      valueFiles: [values.yaml, values-azure.yaml, values-staging.yaml]
+      version: v3
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-system
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - RespectIgnoreDifferences=true
+      - ServerSideApply=true
+      - SkipSchemaValidation=false

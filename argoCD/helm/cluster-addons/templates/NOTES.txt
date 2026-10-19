@@ -1,0 +1,1 @@
+Cluster add-ons are installed once in the platform-system namespace.

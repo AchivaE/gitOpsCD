@@ -1,0 +1,69 @@
+{{- if .Values.gatekeeper.enabled -}}
+---
+# Interdire les conteneurs privilégiés
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sPSPPrivilegedContainer
+metadata:
+  name: {{ include "platform.fullname" . }}-no-privileged
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces:
+      - {{ .Release.Namespace }}
+---
+# Forcer les images provenant uniquement de registres autorisés
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sAllowedRepos
+metadata:
+  name: {{ include "platform.fullname" . }}-trusted-repos
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+  parameters:
+    repos:
+      - "docker.io"
+      - "quay.io"
+      - "ghcr.io"
+      - "myacr17911.azurecr.io"
+      - "*.azurecr.io"
+---
+# Forcer les limites de ressources (CPU/Mémoire)
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredResources
+metadata:
+  name: {{ include "platform.fullname" . }}-resource-limits
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces:
+      - {{ .Release.Namespace }}
+  parameters:
+    message: "Resources limits (CPU/Memory) are mandatory for all containers."
+    cpu: "2000m"
+    memory: "2Gi"
+---
+# Interdire le tag :latest pour la production
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sContainerAllowedImages
+metadata:
+  name: {{ include "platform.fullname" . }}-no-latest-tag
+spec:
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Pod"]
+    namespaces:
+      - {{ .Release.Namespace }}
+  parameters:
+    message: "The ':latest' tag is forbidden. Please use a specific version tag."
+    images:
+      - "*"
+    # Cette règle gatekeeper est souvent implémentée via un template Regexp
+    # Ici on utilise une simplification ou on suggère l'usage de K8sRegularExpressionPolicy
+{{- end -}}

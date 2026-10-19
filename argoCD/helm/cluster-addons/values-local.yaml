@@ -1,0 +1,27 @@
+# Small local-cluster footprint. It deliberately avoids cloud secret stores,
+# public ACME issuers and persistent dashboards.
+managedNamespaces: []
+secrets:
+  externalSecrets:
+    enabled: false
+certificateIssuers:
+  enabled: false
+observability:
+  platformAlerts:
+    enabled: false
+kube-prometheus-stack:
+  grafana:
+    enabled: false
+  alertmanager:
+    alertmanagerSpec:
+      configSecret: ""
+  prometheus:
+    prometheusSpec:
+      retention: 24h
+      storageSpec: {}
+cert-manager:
+  replicaCount: 1
+  cainjector:
+    replicaCount: 1
+  webhook:
+    replicaCount: 1

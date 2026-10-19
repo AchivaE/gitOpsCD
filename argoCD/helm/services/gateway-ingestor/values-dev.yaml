@@ -1,0 +1,9 @@
+# Applied after values-local.yaml by the dev Argo CD Application.
+# Load/tag this externally-built image into the local cluster runtime first.
+image:
+  repository: gateway-ingestor
+  tag: dev
+  pullPolicy: IfNotPresent
+replicas: 1
+autoscaling:
+  enabled: false

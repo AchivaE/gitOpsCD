@@ -1,0 +1,279 @@
+{{- if and .Values.externalSecret.enabled .Values.configRepository.enabled }}
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}-git
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: {{ .Values.externalSecret.secretStoreRef }}
+    kind: ClusterSecretStore
+  target:
+    name: {{ .Values.configRepository.credentialsSecret }}
+    creationPolicy: Owner
+  data:
+    - secretKey: username
+      remoteRef:
+        key: {{ .Values.externalSecret.usernameRemoteKey | quote }}
+    - secretKey: password
+      remoteRef:
+        key: {{ .Values.externalSecret.passwordRemoteKey | quote }}
+---
+{{- end }}
+{{- if and .Values.externalSecret.enabled .Values.consul.enabled }}
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}-consul-acl
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: {{ .Values.externalSecret.secretStoreRef }}
+    kind: ClusterSecretStore
+  target:
+    name: {{ .Values.consul.acl.secretName }}
+    creationPolicy: Owner
+  data:
+    - secretKey: {{ .Values.consul.acl.secretKey }}
+      remoteRef:
+        key: {{ .Values.consul.acl.remoteKey | quote }}
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}-consul-tls
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: {{ .Values.externalSecret.secretStoreRef }}
+    kind: ClusterSecretStore
+  target:
+    name: {{ .Values.consul.tls.secretName }}
+    creationPolicy: Owner
+  data:
+    - secretKey: {{ .Values.consul.tls.keyStoreKey }}
+      remoteRef:
+        key: {{ .Values.consul.tls.keyStoreRemoteKey | quote }}
+        decodingStrategy: Base64
+    - secretKey: {{ .Values.consul.tls.keyStorePasswordKey }}
+      remoteRef:
+        key: {{ .Values.consul.tls.keyStorePasswordRemoteKey | quote }}
+    - secretKey: {{ .Values.consul.tls.trustStoreKey }}
+      remoteRef:
+        key: {{ .Values.consul.tls.trustStoreRemoteKey | quote }}
+        decodingStrategy: Base64
+    - secretKey: {{ .Values.consul.tls.trustStorePasswordKey }}
+      remoteRef:
+        key: {{ .Values.consul.tls.trustStorePasswordRemoteKey | quote }}
+{{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}
+  labels: {{- include "config-ingestor.labels" . | nindent 4 }}
+spec:
+  replicas: {{ if .Values.autoscaling.enabled }}{{ .Values.autoscaling.minReplicas }}{{ else }}{{ .Values.replicas }}{{ end }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: { maxSurge: 1, maxUnavailable: 0 }
+  selector:
+    matchLabels: {{- include "config-ingestor.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "config-ingestor.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "config-ingestor.fullname" . }}
+      securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: config-ingestor
+          image: "{{ include "config-ingestor.image" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext: { allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: { drop: [ALL] } }
+          ports: [{ name: http, containerPort: 8888 }]
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: {{ ternary "git,prod" "native" .Values.configRepository.enabled | quote }}
+            - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
+              value: health,info
+            - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
+              value: never
+{{- if .Values.configRepository.enabled }}
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_URI
+              value: {{ .Values.configRepository.uri | quote }}
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_DEFAULT_LABEL
+              value: {{ .Values.configRepository.defaultLabel | quote }}
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_SEARCH_PATHS
+              value: {{ .Values.configRepository.searchPaths | quote }}
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_CLONE_ON_START
+              value: "true"
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_BASEDIR
+              value: /tmp/config-repo
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.configRepository.credentialsSecret }}
+                  key: username
+            - name: SPRING_CLOUD_CONFIG_SERVER_GIT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.configRepository.credentialsSecret }}
+                  key: password
+{{- end }}
+            - name: SPRING_CLOUD_CONSUL_ENABLED
+              value: {{ .Values.consul.enabled | quote }}
+{{- if .Values.consul.enabled }}
+            - name: SPRING_CLOUD_CONSUL_HOST
+              value: {{ .Values.consul.host | quote }}
+            - name: SPRING_CLOUD_CONSUL_PORT
+              value: {{ .Values.consul.port | quote }}
+            - name: SPRING_CLOUD_CONSUL_SCHEME
+              value: {{ .Values.consul.scheme | quote }}
+            - name: SPRING_CLOUD_CONSUL_DISCOVERY_ACL_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.consul.acl.secretName }}
+                  key: {{ .Values.consul.acl.secretKey }}
+            - name: SPRING_CLOUD_CONSUL_TLS_KEY_STORE_PATH
+              value: file:/var/run/consul-tls/{{ .Values.consul.tls.keyStoreKey }}
+            - name: SPRING_CLOUD_CONSUL_TLS_KEY_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.consul.tls.secretName }}
+                  key: {{ .Values.consul.tls.keyStorePasswordKey }}
+            - name: SPRING_CLOUD_CONSUL_TLS_TRUST_STORE_PATH
+              value: file:/var/run/consul-tls/{{ .Values.consul.tls.trustStoreKey }}
+            - name: SPRING_CLOUD_CONSUL_TLS_TRUST_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.consul.tls.secretName }}
+                  key: {{ .Values.consul.tls.trustStorePasswordKey }}
+{{- end }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: http }, initialDelaySeconds: 20, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 6 }
+          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: http }, initialDelaySeconds: 45, periodSeconds: 15, timeoutSeconds: 3, failureThreshold: 3 }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+{{- if .Values.consul.enabled }}
+            - { name: consul-tls, mountPath: /var/run/consul-tls, readOnly: true }
+{{- end }}
+      volumes:
+        - { name: tmp, emptyDir: { sizeLimit: 256Mi } }
+{{- if .Values.consul.enabled }}
+        - name: consul-tls
+          secret:
+            secretName: {{ .Values.consul.tls.secretName }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}
+  labels: {{- include "config-ingestor.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  selector: {{- include "config-ingestor.selectorLabels" . | nindent 4 }}
+  ports: [{ name: http, port: {{ .Values.service.port }}, targetPort: http }]
+---
+{{- if .Values.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "config-ingestor.selectorLabels" . | nindent 6 }}
+{{- end }}
+---
+{{- if and .Values.monitoring.enabled .Values.monitoring.serviceMonitorEnabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}
+  labels: {{- include "config-ingestor.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: {{- include "config-ingestor.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /actuator/prometheus
+      interval: {{ .Values.monitoring.scrapeInterval }}
+---
+{{- end }}
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}
+  labels: {{- include "config-ingestor.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: config-ingestor.availability
+      rules:
+        - alert: ConfigIngestorUnavailable
+          expr: 'kube_deployment_spec_replicas{namespace="{{ .Release.Namespace }}",deployment="{{ include "config-ingestor.fullname" . }}"} > 0 and kube_deployment_status_replicas_available{namespace="{{ .Release.Namespace }}",deployment="{{ include "config-ingestor.fullname" . }}"} < 1'
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: Config Ingestor has no available replicas
+            description: Configuration delivery is unavailable in namespace {{ .Release.Namespace }}.
+{{- end }}
+{{- if .Values.networkPolicy.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "config-ingestor.fullname" . }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "config-ingestor.selectorLabels" . | nindent 6 }}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: Exists
+      ports: [{ protocol: TCP, port: 8888 }]
+  egress:
+    - to:
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
+          podSelector: { matchLabels: { k8s-app: kube-dns } }
+      ports: [{ protocol: UDP, port: 53 }, { protocol: TCP, port: 53 }]
+{{- if .Values.consul.enabled }}
+    - to:
+{{- range .Values.networkPolicy.consulEgressCidrs }}
+        - ipBlock: { cidr: {{ . | quote }} }
+{{- end }}
+      ports: [{ protocol: TCP, port: {{ .Values.consul.port }} }]
+{{- end }}
+{{- if .Values.configRepository.enabled }}
+    - to:
+{{- range .Values.configRepository.egressCidrs }}
+        - ipBlock: { cidr: {{ . | quote }} }
+{{- end }}
+      ports: [{ protocol: TCP, port: 443 }]
+{{- end }}
+{{- end }}
+{{- if .Values.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: {{ include "config-ingestor.fullname" . }} }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: {{ include "config-ingestor.fullname" . }} }
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }} } } }]
+{{- end }}

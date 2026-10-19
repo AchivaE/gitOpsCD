@@ -1,0 +1,30 @@
+dependencies:
+- name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 6.24.0
+- name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 68.4.0
+- name: velero
+  repository: https://vmware-tanzu.github.io/helm-charts
+  version: 8.1.0
+- name: gatekeeper
+  repository: https://open-policy-agent.github.io/gatekeeper/charts
+  version: 3.18.1
+- name: consul
+  repository: https://helm.releases.hashicorp.com
+  version: 1.5.1
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 15.5.38
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 20.6.0
+- name: keycloak
+  repository: https://charts.bitnami.com/bitnami
+  version: 24.4.6
+- name: cert-manager
+  repository: https://charts.jetstack.io
+  version: v1.15.3
+digest: sha256:c85367017e8b6fe69444fc06a12771bc3ce9e1ce88e8c7d41b5ce652b42decfe
+generated: "2026-10-18T18:39:11.6055442-04:00"

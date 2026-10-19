@@ -1,0 +1,29 @@
+suite: Peer Authentication rendering
+templates:
+  - templates/peer-authentication.yaml
+values:
+  - values.yaml
+
+tests:
+  - it: should not render when ISTO mTLS disabled by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render PeerAuthentication when enabled
+    set:
+      serviceMesh:
+        istio:
+          enabled: true
+          mtls:
+            enabled: true
+            mode: STRICT
+    asserts:
+      - hasDocuments:
+          count: 1
+      - containsDocument:
+          kind: PeerAuthentication
+          apiVersion: security.istio.io/v1beta1
+      - equal:
+          path: spec.mtls.mode
+          value: STRICT

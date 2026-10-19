@@ -1,0 +1,17 @@
+# Provision the aws-secrets-manager ClusterSecretStore separately with IRSA.
+secrets:
+  externalSecrets:
+    secretStoreRef: aws-secrets-manager
+certificateIssuers:
+  # Select a solver only after its DNS/IAM prerequisites are provisioned.
+  enabled: false
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: gp3
+  grafana:
+    persistence:
+      storageClassName: gp3

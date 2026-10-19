@@ -1,0 +1,85 @@
+# This chart is deployed once per Kubernetes cluster to namespace platform-system.
+secrets:
+  externalSecrets:
+    enabled: true
+    refreshInterval: 1h
+    secretStoreRef: azure-keyvault
+  grafanaAdmin:
+    usernameRemoteKey: spaceup-cluster-grafana-admin-user
+    passwordRemoteKey: spaceup-cluster-grafana-admin-password
+  alertmanager:
+    configRemoteKey: spaceup-cluster-alertmanager-config
+
+# Application namespaces are cluster-scoped resources and are owned once by
+# the controlled cluster-addons application, never created implicitly by an
+# individual service Application.
+managedNamespaces:
+  - spaceup-dev
+  - spaceup-staging
+  - spaceup
+
+observability:
+  platformAlerts:
+    enabled: true
+    certificateWarningDays: 14
+    certificateCriticalDays: 7
+    persistentVolumeWarningPercent: 15
+    persistentVolumeCriticalPercent: 5
+
+certificateIssuers:
+  enabled: true
+  acmeEmail: security@spaceup.org
+  # The cloud-specific ingress class lives in a layered provider profile.
+  ingressClassName: ""
+  issuers:
+    staging:
+      name: letsencrypt-staging
+      server: https://acme-staging-v02.api.letsencrypt.org/directory
+      accountKeySecret: letsencrypt-staging-account-key
+    production:
+      name: letsencrypt-prod
+      server: https://acme-v02.api.letsencrypt.org/directory
+      accountKeySecret: letsencrypt-prod-account-key
+
+kube-prometheus-stack:
+  enabled: true
+  alertmanager:
+    alertmanagerSpec:
+      configSecret: alertmanager-config
+  prometheus:
+    prometheusSpec:
+      retention: 30d
+      serviceMonitorSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: false
+      serviceMonitorSelector: {}
+      serviceMonitorNamespaceSelector: {}
+      ruleSelector: {}
+      ruleNamespaceSelector: {}
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: [ReadWriteOnce]
+            resources:
+              requests:
+                storage: 50Gi
+  grafana:
+    enabled: true
+    admin:
+      existingSecret: grafana-admin
+      userKey: admin-user
+      passwordKey: admin-password
+    persistence:
+      enabled: true
+      type: pvc
+      accessModes: [ReadWriteOnce]
+      size: 10Gi
+
+cert-manager:
+  enabled: true
+  clusterResourceNamespace: platform-system
+  crds:
+    enabled: true
+  prometheus:
+    enabled: true
+    servicemonitor:
+      enabled: true

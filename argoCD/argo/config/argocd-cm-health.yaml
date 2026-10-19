@@ -1,0 +1,64 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # Argo CD reads resource customizations only from argocd-cm. Server-side
+  # apply below merges these keys without replacing unrelated Argo settings.
+  name: argocd-cm
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
+    # Must be present before child Applications are created. The Application
+    # health rule then makes the bootstrap wait for ESO and its CRDs before
+    # the ClusterSecretStore / ExternalSecret waves are applied.
+    argocd.argoproj.io/sync-wave: "-40"
+  labels:
+    app.kubernetes.io/name: argocd
+    app.kubernetes.io/component: health-checks
+data:
+  resource.customizations.health.external-secrets.io_ExternalSecret: |
+    hs = {}
+    if obj.status ~= nil then
+      if obj.status.conditions ~= nil then
+        for i, condition in ipairs(obj.status.conditions) do
+          if condition.type == "Ready" and condition.status == "True" then
+            hs.status = "Healthy"
+            hs.message = condition.message
+            return hs
+          end
+          if condition.type == "Ready" and condition.status == "False" then
+            hs.status = "Degraded"
+            hs.message = condition.message
+            return hs
+          end
+        end
+      end
+    end
+    hs.status = "Progressing"
+    hs.message = "Waiting for secret synchronization"
+    return hs
+
+  resource.customizations.health.security.istio.io_PeerAuthentication: |
+    hs = {}
+    hs.status = "Healthy"
+    hs.message = "mTLS policy applied"
+    return hs
+
+  resource.customizations.health.monitoring.coreos.com_ServiceMonitor: |
+    hs = {}
+    hs.status = "Healthy"
+    hs.message = "Prometheus target discovered"
+    return hs
+
+  # Application health was removed from Argo CD's default assessment. Restore
+  # it because this repository deliberately uses app-of-apps sync waves.
+  resource.customizations.health.argoproj.io_Application: |
+    hs = {}
+    hs.status = "Progressing"
+    hs.message = "Waiting for child application health"
+    if obj.status ~= nil and obj.status.health ~= nil then
+      hs.status = obj.status.health.status
+      if obj.status.health.message ~= nil then
+        hs.message = obj.status.health.message
+      end
+    end
+    return hs

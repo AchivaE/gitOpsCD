@@ -1,0 +1,7 @@
+image:
+  tag: REPLACE_WITH_PROD_IMMUTABLE_TAG
+  requireDigest: true
+ingress:
+  enabled: false
+configRepository:
+  uri: REPLACE_WITH_PRIVATE_CONFIG_REPOSITORY_URL

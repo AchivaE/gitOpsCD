@@ -3,6 +3,7 @@ kind: Kustomization
 
 # Docker Desktop, kind and k3d: no Azure identity, Key Vault or cluster add-ons.
 resources:
+  - ../../namespaces/local
   - ../../projects/dev
   - ../../config
   - ../../applications/services-dev

@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spaceup
+  labels:
+    app.kubernetes.io/part-of: spaceup-platform
+    environment: prod
+  annotations:
+    argocd.argoproj.io/sync-wave: "-35"

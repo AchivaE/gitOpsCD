@@ -3,6 +3,7 @@ kind: Kustomization
 
 # One dedicated AKS production cluster.
 resources:
+  - ../../namespaces/azure-prod
   - ../../projects/prod
   - ../../projects/cluster-addons
   - ../../config

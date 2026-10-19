@@ -16,6 +16,10 @@ require_text() {
   grep -Fq "$2" "$1" || { echo "missing required configuration in $1: $2" >&2; exit 1; }
 }
 
+require_absent() {
+  ! grep -Fq "$2" "$1" || { echo "forbidden configuration in $1: $2" >&2; exit 1; }
+}
+
 for file in \
   "${argo_root}/bootstrap/argocd-bootstrap.yaml" \
   "${argo_root}/bootstrap/argocd-bootstrap-azure-staging.yaml" \
@@ -26,6 +30,9 @@ for file in \
   "${argo_root}/applications/platform-staging/application.yaml" \
   "${argo_root}/applications/platform-prod/application.yaml" \
   "${argo_root}/projects/cluster-addons/project.yaml" \
+  "${argo_root}/namespaces/local/namespace.yaml" \
+  "${argo_root}/namespaces/azure-staging/namespace.yaml" \
+  "${argo_root}/namespaces/azure-prod/namespace.yaml" \
   "${argo_root}/config/argocd-cm-health.yaml"; do
   require_file "$file"
 done
@@ -48,6 +55,15 @@ require_text "${argo_root}/applications/services-dev/applicationset.yaml" "path:
 require_text "${argo_root}/applications/services-dev/applicationset.yaml" "values-local.yaml"
 require_text "${argo_root}/applications/services-staging/applicationset.yaml" "values-azure.yaml"
 require_text "${argo_root}/applications/services-prod/applicationset.yaml" "values-prod.yaml"
+require_absent "${argo_root}/applications/services-dev/applicationset.yaml" "CreateNamespace=true"
+require_absent "${argo_root}/applications/services-staging/applicationset.yaml" "CreateNamespace=true"
+require_absent "${argo_root}/applications/services-prod/applicationset.yaml" "CreateNamespace=true"
+require_text "${argo_root}/overlays/local/kustomization.yaml" "../../namespaces/local"
+require_text "${argo_root}/overlays/azure-staging/kustomization.yaml" "../../namespaces/azure-staging"
+require_text "${argo_root}/overlays/azure-prod/kustomization.yaml" "../../namespaces/azure-prod"
+require_text "${argo_root}/namespaces/local/namespace.yaml" "name: spaceup-dev"
+require_text "${argo_root}/namespaces/azure-staging/namespace.yaml" "name: spaceup-staging"
+require_text "${argo_root}/namespaces/azure-prod/namespace.yaml" "name: spaceup"
 require_text "${argo_root}/applications/platform-prod/application.yaml" "path: argoCD/helm/cluster-addons"
 require_text "${argo_root}/projects/cluster-addons/project.yaml" "namespace: external-secrets"
 require_text "${argo_root}/config/argocd-cm-health.yaml" "argocd.argoproj.io/sync-wave: \"-40\""

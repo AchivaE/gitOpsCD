@@ -3,6 +3,7 @@ kind: Kustomization
 
 # One dedicated AKS staging cluster.
 resources:
+  - ../../namespaces/azure-staging
   - ../../projects/staging
   - ../../projects/cluster-addons
   - ../../config

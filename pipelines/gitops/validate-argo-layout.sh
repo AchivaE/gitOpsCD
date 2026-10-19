@@ -80,12 +80,12 @@ render() {
 
 render config-ingestor "${delivery_root}/argoCD/helm/services/config-ingestor" spaceup-dev \
   -f "${delivery_root}/argoCD/helm/services/config-ingestor/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-local.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-dev.yaml"
+  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-dev.yaml" \
+  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-local.yaml"
 render gateway-ingestor "${delivery_root}/argoCD/helm/services/gateway-ingestor" spaceup-dev \
   -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-local.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-dev.yaml"
+  -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-dev.yaml" \
+  -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-local.yaml"
 render cluster-addons-staging "${delivery_root}/argoCD/helm/cluster-addons" platform-system \
   -f "${delivery_root}/argoCD/helm/cluster-addons/values.yaml" \
   -f "${delivery_root}/argoCD/helm/cluster-addons/values-azure.yaml" \

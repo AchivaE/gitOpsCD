@@ -1,8 +1,8 @@
 # Portable local-cluster profile (kind, k3d, Docker Desktop Kubernetes, minikube).
 # Helm still only pulls/runs the selected image; load or pull that image beforehand.
 image:
-  repository: config-ingestor
-  tag: local
+  repository: achiva-insgestor-config-service
+  tag: latest
   pullPolicy: IfNotPresent
 replicas: 1
 autoscaling:

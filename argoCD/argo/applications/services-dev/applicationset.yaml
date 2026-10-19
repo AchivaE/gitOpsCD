@@ -25,7 +25,7 @@ spec:
         path: "{{ path }}"
         targetRevision: main
         helm:
-          valueFiles: [values.yaml, values-local.yaml, values-dev.yaml]
+          valueFiles: [values.yaml, values-dev.yaml, values-local.yaml]
           version: v3
       destination:
         server: https://kubernetes.default.svc

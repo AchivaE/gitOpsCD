@@ -13,6 +13,10 @@ spec:
   destinations:
     - namespace: platform-system
       server: https://kubernetes.default.svc
+    # Prometheus discovers control-plane endpoints and cert-manager stores its
+    # leader-election leases here. No application workload is deployed here.
+    - namespace: kube-system
+      server: https://kubernetes.default.svc
     # External Secrets Operator is a cluster add-on, but runs in its dedicated
     # namespace rather than alongside Prometheus and cert-manager.
     - namespace: external-secrets

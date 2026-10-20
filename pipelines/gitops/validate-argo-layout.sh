@@ -82,6 +82,13 @@ render config-ingestor "${delivery_root}/argoCD/helm/services/config-ingestor" s
   -f "${delivery_root}/argoCD/helm/services/config-ingestor/values.yaml" \
   -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-dev.yaml" \
   -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-local.yaml"
+
+config_manifest="$(helm template config-ingestor "${delivery_root}/argoCD/helm/services/config-ingestor" --namespace spaceup-dev \
+  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values.yaml" \
+  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-dev.yaml" \
+  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-local.yaml")"
+printf '%s\n' "${config_manifest}" | grep -Fq "startupProbe:" || { echo "Config Ingestor startupProbe is required" >&2; exit 1; }
+printf '%s\n' "${config_manifest}" | grep -Fq "failureThreshold: 30" || { echo "Config Ingestor must allow its configured startup window" >&2; exit 1; }
 render gateway-ingestor "${delivery_root}/argoCD/helm/services/gateway-ingestor" spaceup-dev \
   -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values.yaml" \
   -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-dev.yaml" \

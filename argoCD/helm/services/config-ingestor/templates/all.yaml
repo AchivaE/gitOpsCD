@@ -156,8 +156,23 @@ spec:
                   key: {{ .Values.consul.tls.trustStorePasswordKey }}
 {{- end }}
           resources: {{- toYaml .Values.resources | nindent 12 }}
-          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: http }, initialDelaySeconds: 20, periodSeconds: 10, timeoutSeconds: 3, failureThreshold: 6 }
-          livenessProbe: { httpGet: { path: /actuator/health/liveness, port: http }, initialDelaySeconds: 45, periodSeconds: 15, timeoutSeconds: 3, failureThreshold: 3 }
+          startupProbe:
+            httpGet: { path: {{ .Values.probes.startup.path }}, port: http }
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+          readinessProbe:
+            httpGet: { path: {{ .Values.probes.readiness.path }}, port: http }
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+          livenessProbe:
+            httpGet: { path: {{ .Values.probes.liveness.path }}, port: http }
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
           volumeMounts:
             - { name: tmp, mountPath: /tmp }
 {{- if .Values.consul.enabled }}

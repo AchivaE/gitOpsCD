@@ -27,6 +27,7 @@ for file in \
   "${argo_root}/applications/services-dev/applicationset.yaml" \
   "${argo_root}/applications/services-staging/applicationset.yaml" \
   "${argo_root}/applications/services-prod/applicationset.yaml" \
+  "${argo_root}/applications/platform-local/application.yaml" \
   "${argo_root}/applications/platform-staging/application.yaml" \
   "${argo_root}/applications/platform-prod/application.yaml" \
   "${argo_root}/projects/cluster-addons/project.yaml" \
@@ -64,6 +65,9 @@ require_text "${argo_root}/overlays/azure-prod/kustomization.yaml" "../../namesp
 require_text "${argo_root}/namespaces/local/namespace.yaml" "name: spaceup-dev"
 require_text "${argo_root}/namespaces/azure-staging/namespace.yaml" "name: spaceup-staging"
 require_text "${argo_root}/namespaces/azure-prod/namespace.yaml" "name: spaceup"
+require_text "${argo_root}/applications/platform-local/application.yaml" "name: cluster-addons-local"
+require_text "${argo_root}/applications/platform-local/application.yaml" "SkipDryRunOnMissingResource=true"
+require_text "${argo_root}/applications/platform-local/application.yaml" "values-local.yaml"
 require_text "${argo_root}/applications/platform-prod/application.yaml" "path: argoCD/helm/cluster-addons"
 require_text "${argo_root}/projects/cluster-addons/project.yaml" "namespace: external-secrets"
 require_text "${argo_root}/config/argocd-cm-health.yaml" "argocd.argoproj.io/sync-wave: \"-40\""
@@ -93,6 +97,9 @@ render gateway-ingestor "${delivery_root}/argoCD/helm/services/gateway-ingestor"
   -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values.yaml" \
   -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-dev.yaml" \
   -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-local.yaml"
+render cluster-addons-local "${delivery_root}/argoCD/helm/cluster-addons" platform-system \
+  -f "${delivery_root}/argoCD/helm/cluster-addons/values.yaml" \
+  -f "${delivery_root}/argoCD/helm/cluster-addons/values-local.yaml"
 render cluster-addons-staging "${delivery_root}/argoCD/helm/cluster-addons" platform-system \
   -f "${delivery_root}/argoCD/helm/cluster-addons/values.yaml" \
   -f "${delivery_root}/argoCD/helm/cluster-addons/values-azure.yaml" \

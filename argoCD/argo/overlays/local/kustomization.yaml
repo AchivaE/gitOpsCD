@@ -5,6 +5,8 @@ kind: Kustomization
 resources:
   - ../../namespaces/local
   - ../../projects/dev
+  - ../../projects/cluster-addons
   - ../../config
+  - ../../applications/platform-local
   - ../../applications/services-dev
   - ../../security

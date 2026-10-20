@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-addons-local
+  namespace: argocd
+  annotations:
+    # The AppProject is created at wave -30. Add-ons require its permissions.
+    argocd.argoproj.io/sync-wave: "-20"
+spec:
+  project: spaceup-cluster-addons
+  source:
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    path: argoCD/helm/cluster-addons
+    targetRevision: main
+    helm:
+      valueFiles: [values.yaml, values-local.yaml]
+      version: v3
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      # This is the sole Application allowed to provision this shared namespace.
+      - CreateNamespace=true
+      # The Prometheus Operator CRDs are created in this same sync.
+      - SkipDryRunOnMissingResource=true
+      - PrunePropagationPolicy=foreground
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true

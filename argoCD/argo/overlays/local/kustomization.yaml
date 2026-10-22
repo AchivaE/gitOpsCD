@@ -6,7 +6,9 @@ resources:
   - ../../namespaces/local
   - ../../projects/dev
   - ../../projects/cluster-addons
+  - ../../projects/platform-runtime
   - ../../config
   - ../../applications/platform-local
+  - ../../applications/platform-consul-local
   - ../../applications/services-dev
   - ../../security

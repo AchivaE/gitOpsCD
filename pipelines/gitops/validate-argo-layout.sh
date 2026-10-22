@@ -30,8 +30,13 @@ for file in \
   "${argo_root}/applications/platform-local/application.yaml" \
   "${argo_root}/applications/platform-staging/application.yaml" \
   "${argo_root}/applications/platform-prod/application.yaml" \
+  "${argo_root}/applications/platform-consul-local/consul.yaml" \
+  "${argo_root}/applications/platform-consul-staging/consul.yaml" \
+  "${argo_root}/applications/platform-consul-prod/consul.yaml" \
   "${argo_root}/projects/cluster-addons/project.yaml" \
+  "${argo_root}/projects/platform-runtime/project.yaml" \
   "${argo_root}/namespaces/local/namespace.yaml" \
+  "${argo_root}/namespaces/local/platform-runtime.yaml" \
   "${argo_root}/namespaces/azure-staging/namespace.yaml" \
   "${argo_root}/namespaces/azure-prod/namespace.yaml" \
   "${argo_root}/config/argocd-cm-health.yaml"; do
@@ -44,6 +49,7 @@ for path in \
   argoCD/argo/overlays/azure-staging \
   argoCD/argo/overlays/azure-prod \
   argoCD/helm/cluster-addons \
+  argoCD/helm/platform/consul \
   argoCD/helm/services/config-ingestor \
   argoCD/helm/services/gateway-ingestor; do
   test -d "${repository_root}/${path}" || { echo "Argo Git path does not exist: ${path}" >&2; exit 1; }
@@ -71,6 +77,13 @@ require_text "${argo_root}/applications/platform-local/application.yaml" "values
 require_text "${argo_root}/projects/cluster-addons/project.yaml" "namespace: kube-system"
 require_text "${argo_root}/applications/platform-prod/application.yaml" "path: argoCD/helm/cluster-addons"
 require_text "${argo_root}/projects/cluster-addons/project.yaml" "namespace: external-secrets"
+require_text "${argo_root}/overlays/local/kustomization.yaml" "../../projects/platform-runtime"
+require_text "${argo_root}/overlays/local/kustomization.yaml" "../../applications/platform-consul-local"
+require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "name: platform-consul-local"
+require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "path: argoCD/helm/platform/consul"
+require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "values-local.yaml"
+require_text "${argo_root}/projects/platform-runtime/project.yaml" "namespace: platform-runtime"
+require_text "${argo_root}/namespaces/local/platform-runtime.yaml" "name: platform-runtime"
 require_text "${argo_root}/config/argocd-cm-health.yaml" "argocd.argoproj.io/sync-wave: \"-40\""
 require_text "${argo_root}/config/argocd-cm-health.yaml" "resource.customizations.health.argoproj.io_Application"
 
@@ -109,5 +122,16 @@ render cluster-addons-prod "${delivery_root}/argoCD/helm/cluster-addons" platfor
   -f "${delivery_root}/argoCD/helm/cluster-addons/values.yaml" \
   -f "${delivery_root}/argoCD/helm/cluster-addons/values-azure.yaml" \
   -f "${delivery_root}/argoCD/helm/cluster-addons/values-prod.yaml"
+render platform-consul-local "${delivery_root}/argoCD/helm/platform/consul" platform-runtime \
+  -f "${delivery_root}/argoCD/helm/platform/consul/values.yaml" \
+  -f "${delivery_root}/argoCD/helm/platform/consul/values-local.yaml"
+render platform-consul-staging "${delivery_root}/argoCD/helm/platform/consul" platform-runtime \
+  -f "${delivery_root}/argoCD/helm/platform/consul/values.yaml" \
+  -f "${delivery_root}/argoCD/helm/platform/consul/values-azure.yaml" \
+  -f "${delivery_root}/argoCD/helm/platform/consul/values-staging.yaml"
+render platform-consul-prod "${delivery_root}/argoCD/helm/platform/consul" platform-runtime \
+  -f "${delivery_root}/argoCD/helm/platform/consul/values.yaml" \
+  -f "${delivery_root}/argoCD/helm/platform/consul/values-azure.yaml" \
+  -f "${delivery_root}/argoCD/helm/platform/consul/values-prod.yaml"
 
 echo "Argo CD source layout and active Helm render preflight passed."

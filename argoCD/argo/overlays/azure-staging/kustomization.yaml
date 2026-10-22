@@ -6,8 +6,10 @@ resources:
   - ../../namespaces/azure-staging
   - ../../projects/staging
   - ../../projects/cluster-addons
+  - ../../projects/platform-runtime
   - ../../config
   - ../../secrets
   - ../../applications/platform-staging
+  - ../../applications/platform-consul-staging
   - ../../applications/services-staging
   - ../../security

@@ -1,0 +1,23 @@
+{{- $replicas := int .Values.server.replicas -}}
+{{- $bootstrap := int .Values.server.bootstrapExpect -}}
+{{- if not .Values.global.tls.enabled -}}
+{{- fail "Consul requires global.tls.enabled=true." -}}
+{{- end -}}
+{{- if not .Values.global.tls.enableAutoEncrypt -}}
+{{- fail "Consul requires global.tls.enableAutoEncrypt=true." -}}
+{{- end -}}
+{{- if not .Values.global.acls.manageSystemACLs -}}
+{{- fail "Consul requires global.acls.manageSystemACLs=true." -}}
+{{- end -}}
+{{- if not .Values.global.gossipEncryption.autoGenerate -}}
+{{- fail "Consul requires generated or externally supplied gossip encryption." -}}
+{{- end -}}
+{{- if or (lt $replicas 1) (ne (mod $replicas 2) 1) -}}
+{{- fail "Consul server.replicas must be a positive odd number." -}}
+{{- end -}}
+{{- if ne $bootstrap $replicas -}}
+{{- fail "Consul server.bootstrapExpect must equal server.replicas for a new datacenter." -}}
+{{- end -}}
+{{- if and (ne .Values.platform.environment "local") (lt $replicas 3) -}}
+{{- fail "Staging and production Consul require at least three servers." -}}
+{{- end -}}

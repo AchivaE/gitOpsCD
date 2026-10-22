@@ -1,0 +1,25 @@
+platform:
+  environment: local
+
+global:
+  datacenter: local-dc1
+
+# One server is deliberately limited to a developer workstation. It retains
+# TLS, ACLs, gossip encryption and a persistent volume, but provides no HA.
+server:
+  replicas: 1
+  bootstrapExpect: 1
+  storage: 2Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  disruptionBudget:
+    enabled: false
+
+# A client DaemonSet is unnecessary on a one-node Minikube validation cluster.
+client:
+  enabled: false

@@ -1,0 +1,17 @@
+platform:
+  environment: prod
+
+global:
+  datacenter: prod-dc1
+
+server:
+  replicas: 3
+  bootstrapExpect: 3
+  storage: 50Gi
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi

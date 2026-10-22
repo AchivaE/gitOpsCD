@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-runtime
+  labels:
+    app.kubernetes.io/part-of: spaceup-platform
+    platform.spaceup.io/layer: runtime-dependency
+    environment: local
+  annotations:
+    argocd.argoproj.io/sync-wave: "-35"

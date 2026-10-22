@@ -1,0 +1,71 @@
+# Shared secure baseline. Environment files only size the cluster; they do not
+# weaken TLS, ACLs or gossip encryption.
+platform:
+  environment: base
+
+global:
+  enabled: true
+  name: consul
+  datacenter: spaceup-dc1
+  image: hashicorp/consul:1.19.1
+  imageK8S: hashicorp/consul-k8s-control-plane:1.5.1
+  imagePullPolicy: IfNotPresent
+  logLevel: info
+  tls:
+    enabled: true
+    enableAutoEncrypt: true
+    verify: true
+    httpsOnly: true
+  acls:
+    manageSystemACLs: true
+  gossipEncryption:
+    autoGenerate: true
+  metrics:
+    enabled: true
+    enableAgentMetrics: true
+
+server:
+  enabled: true
+  replicas: 3
+  bootstrapExpect: 3
+  storage: 20Gi
+  # null deliberately selects the target cluster's default StorageClass.
+  storageClass: null
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  disruptionBudget:
+    enabled: true
+
+client:
+  enabled: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+ui:
+  enabled: true
+  service:
+    enabled: true
+    type: ClusterIP
+
+# Service mesh injection and Kubernetes-to-Consul catalog sync are separate
+# adoption decisions. They are intentionally not enabled by this base module.
+connectInject:
+  enabled: false
+syncCatalog:
+  enabled: false
+controller:
+  enabled: false
+prometheus:
+  enabled: false
+tests:
+  enabled: false

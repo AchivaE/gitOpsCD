@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-consul-prod
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-15"
+spec:
+  project: spaceup-platform-runtime
+  source:
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    targetRevision: main
+    path: argoCD/helm/platform/consul
+    helm:
+      valueFiles: [values.yaml, values-azure.yaml, values-prod.yaml]
+      version: v3
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-runtime
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions:
+      - PrunePropagationPolicy=foreground
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+      - SkipDryRunOnMissingResource=true

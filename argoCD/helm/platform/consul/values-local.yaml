@@ -6,20 +6,23 @@ global:
 
 # One server is deliberately limited to a developer workstation. It retains
 # TLS, ACLs, gossip encryption and a persistent volume, but provides no HA.
-server:
-  replicas: 1
-  bootstrapExpect: 1
-  storage: 2Gi
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-  disruptionBudget:
-    enabled: false
+consul:
+  server:
+    replicas: 1
+    bootstrapExpect: 1
+    # Keep 10Gi for the already-created Minikube PVC. Kubernetes PVCs cannot
+    # safely be shrunk by a Helm upgrade.
+    storage: 10Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    disruptionBudget:
+      enabled: false
 
-# A client DaemonSet is unnecessary on a one-node Minikube validation cluster.
-client:
-  enabled: false
+  # A client DaemonSet is unnecessary on a one-node Minikube validation cluster.
+  client:
+    enabled: false

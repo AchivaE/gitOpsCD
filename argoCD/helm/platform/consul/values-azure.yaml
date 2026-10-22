@@ -1,3 +1,4 @@
 # AKS CSI default: override only if the platform team selects a different class.
-server:
-  storageClass: managed-csi
+consul:
+  server:
+    storageClass: managed-csi

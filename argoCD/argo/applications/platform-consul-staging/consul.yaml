@@ -23,4 +23,3 @@ spec:
       - PrunePropagationPolicy=foreground
       - ServerSideApply=true
       - RespectIgnoreDifferences=true
-      - SkipDryRunOnMissingResource=true

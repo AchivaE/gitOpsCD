@@ -37,9 +37,7 @@ Require-Path $consulApp
 Require-Path $consulProject
 Require-Text $consulApp 'name: platform-consul-local'
 Require-Text $consulApp 'path: argoCD/helm/platform/consul'
-Require-Text $consulApp 'SkipDryRunOnMissingResource=true'
-Require-Text $consulProject 'kind: CustomResourceDefinition'
-Require-Text $consulProject 'kind: MutatingWebhookConfiguration'
+Require-Text $consulProject 'kind: ClusterRole'
 Require-Text (Join-Path $argoRoot 'overlays\local\kustomization.yaml') '../../applications/platform-consul-local'
 Require-Text (Join-Path $argoRoot 'namespaces\local\platform-runtime.yaml') 'name: platform-runtime'
 

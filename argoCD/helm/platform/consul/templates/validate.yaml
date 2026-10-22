@@ -1,5 +1,5 @@
-{{- $replicas := int .Values.server.replicas -}}
-{{- $bootstrap := int .Values.server.bootstrapExpect -}}
+{{- $replicas := int .Values.consul.server.replicas -}}
+{{- $bootstrap := int .Values.consul.server.bootstrapExpect -}}
 {{- if not .Values.global.tls.enabled -}}
 {{- fail "Consul requires global.tls.enabled=true." -}}
 {{- end -}}

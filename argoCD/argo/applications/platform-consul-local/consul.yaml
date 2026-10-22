@@ -25,5 +25,3 @@ spec:
       - PrunePropagationPolicy=foreground
       - ServerSideApply=true
       - RespectIgnoreDifferences=true
-      # The chart creates Consul CRDs in this first synchronization.
-      - SkipDryRunOnMissingResource=true

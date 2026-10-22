@@ -4,7 +4,8 @@ platform:
 global:
   datacenter: staging-dc1
 
-server:
-  replicas: 3
-  bootstrapExpect: 3
-  storage: 20Gi
+consul:
+  server:
+    replicas: 3
+    bootstrapExpect: 3
+    storage: 20Gi

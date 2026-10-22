@@ -24,48 +24,51 @@ global:
     enabled: true
     enableAgentMetrics: true
 
-server:
-  enabled: true
-  replicas: 3
-  bootstrapExpect: 3
-  storage: 20Gi
-  # null deliberately selects the target cluster's default StorageClass.
-  storageClass: null
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-    limits:
-      cpu: "1"
-      memory: 1Gi
-  disruptionBudget:
+# Consul is a Helm dependency. Values below must be nested under its dependency
+# name; otherwise Helm silently uses the dependency defaults.
+consul:
+  server:
     enabled: true
+    replicas: 3
+    bootstrapExpect: 3
+    storage: 20Gi
+    # null deliberately selects the target cluster's default StorageClass.
+    storageClass: null
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    disruptionBudget:
+      enabled: true
 
-client:
-  enabled: true
-  resources:
-    requests:
-      cpu: 100m
-      memory: 128Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-
-ui:
-  enabled: true
-  service:
+  client:
     enabled: true
-    type: ClusterIP
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
 
-# Service mesh injection and Kubernetes-to-Consul catalog sync are separate
-# adoption decisions. They are intentionally not enabled by this base module.
-connectInject:
-  enabled: false
-syncCatalog:
-  enabled: false
-controller:
-  enabled: false
-prometheus:
-  enabled: false
-tests:
-  enabled: false
+  ui:
+    enabled: true
+    service:
+      enabled: true
+      type: ClusterIP
+
+  # Service mesh injection and Kubernetes-to-Consul catalog sync are separate
+  # adoption decisions. They are intentionally not enabled by this base module.
+  connectInject:
+    enabled: false
+  syncCatalog:
+    enabled: false
+  controller:
+    enabled: false
+  prometheus:
+    enabled: false
+  tests:
+    enabled: false

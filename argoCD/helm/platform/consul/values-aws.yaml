@@ -1,3 +1,4 @@
 # EKS default: override only if the platform team selects a different class.
-server:
-  storageClass: gp3
+consul:
+  server:
+    storageClass: gp3

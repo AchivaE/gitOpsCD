@@ -13,6 +13,19 @@ renders a pinned artifact from Git.
 - Connect injection and catalog sync remain off until each consuming service has
   an explicit adoption and network-policy design.
 
+## Standard availability profile
+
+This chart is the active Consul implementation for a local Kubernetes cluster.
+The standard staging and production overlays deliberately do not reference it:
+they use a private external or managed Consul server plane so a Kubernetes
+control-plane, CNI, CSI or cluster-upgrade incident cannot also remove service
+discovery and configuration availability.
+
+The `values-staging.yaml` and `values-prod.yaml` files are retained only for a
+separately approved self-managed Consul-on-Kubernetes deployment. Such a
+deployment needs dedicated nodes across availability zones, anti-affinity,
+snapshots and a tested restore exercise before it may be used.
+
 ## Profiles
 
 `values-local.yaml` uses one persistent server for Minikube only. Staging and

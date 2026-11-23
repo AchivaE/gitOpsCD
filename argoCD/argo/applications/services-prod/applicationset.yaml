@@ -7,22 +7,27 @@ metadata:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   generators:
-    - git:
-        repoURL: https://github.com/AchivaE/gitOpsCD.git
-        revision: main
-        directories:
-          - path: argoCD/helm/services/*
+    - list:
+        elements:
+          - name: config-ingestor
+            chartPath: argoCD/helm/services/config-ingestor
+            syncWave: "-10"
+          - name: gateway-ingestor
+            chartPath: argoCD/helm/services/gateway-ingestor
+            syncWave: "0"
   template:
     metadata:
-      name: "prod-{{ path.basename }}"
+      name: "prod-{{name}}"
+      annotations:
+        argocd.argoproj.io/sync-wave: "{{syncWave}}"
       labels:
         environment: prod
-        app.kubernetes.io/name: "{{ path.basename }}"
+        app.kubernetes.io/name: "{{name}}"
     spec:
       project: spaceup-platform-prod
       source:
         repoURL: https://github.com/AchivaE/gitOpsCD.git
-        path: "{{ path }}"
+        path: "{{chartPath}}"
         targetRevision: main
         helm:
           valueFiles: [values.yaml, values-azure.yaml, values-prod.yaml]

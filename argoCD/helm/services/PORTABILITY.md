@@ -38,22 +38,23 @@ chart source change is needed.
 
 ### Argo CD development environment
 
-The `dev` entry in `argo/applications/services.yaml` selects `provider: local`.
-Consequently Argo CD applies `values.yaml`, `values-local.yaml`, then
-`values-dev.yaml`; the rendered images are `config-ingestor:dev` and
-`gateway-ingestor:dev`, both with `imagePullPolicy: IfNotPresent`. Before
-synchronizing `dev`, make those tags available to the Kubernetes node runtime:
+The explicit development catalogue in
+`argoCD/argo/applications/services-dev/applicationset.yaml` applies
+`values.yaml`, `values-dev.yaml`, then `values-local.yaml`. The local layer
+therefore wins for developer image names and disables cloud dependencies.
+Before synchronizing `dev`, make the image references declared in
+`values-local.yaml` available to the Kubernetes node runtime:
 
 ```powershell
 # Docker Desktop Kubernetes shares Docker's image store.
-docker image tag <your-config-image> config-ingestor:dev
-docker image tag <your-gateway-image> gateway-ingestor:dev
+docker image tag <your-config-image> achiva-insgestor-config-service:latest
+docker image tag <your-gateway-image> achiva-insgestor-gateway-service:latest
 
 # kind needs an explicit import after the images are built/tagged.
-kind load docker-image config-ingestor:dev gateway-ingestor:dev --name <cluster-name>
+kind load docker-image achiva-insgestor-config-service:latest achiva-insgestor-gateway-service:latest --name <cluster-name>
 
 # k3d import equivalent.
-k3d image import config-ingestor:dev gateway-ingestor:dev -c <cluster-name>
+k3d image import achiva-insgestor-config-service:latest achiva-insgestor-gateway-service:latest -c <cluster-name>
 ```
 
 Do not use a mutable `latest` tag. When the local image changes, rebuild and
@@ -63,9 +64,10 @@ does not automatically replace a cached `IfNotPresent` image.
 ## Managed clusters and GitOps
 
 Argo CD applies, in order, `values.yaml`, `values-<provider>.yaml`, then
-`values-<environment>.yaml`. The provider is one field (`provider: azure` or
-`provider: aws`) in `argo/applications/services.yaml`; the chart code and the
-environment values remain unchanged. Set it to `aws` only after an EKS cluster,
+`values-<environment>.yaml` for managed clusters. The staging and production
+ApplicationSets declare the Azure profile explicitly today; an AWS target must
+use a separate reviewed ApplicationSet or overlay. The chart code and the
+environment values remain unchanged. Enable an AWS target only after an EKS cluster,
 the AWS Load Balancer Controller, an `aws-secrets-manager` ClusterSecretStore,
 private DNS, and the dependency endpoints have been prepared.
 

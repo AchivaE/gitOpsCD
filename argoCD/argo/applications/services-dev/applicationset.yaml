@@ -7,22 +7,31 @@ metadata:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   generators:
-    - git:
-        repoURL: https://github.com/AchivaE/gitOpsCD.git
-        revision: main
-        directories:
-          - path: argoCD/helm/services/*
+    # Explicit catalogue: adding a directory under helm/services never deploys
+    # a new workload by accident. A service is admitted through a reviewed
+    # catalogue change including its dependency wave.
+    - list:
+        elements:
+          - name: config-ingestor
+            chartPath: argoCD/helm/services/config-ingestor
+            syncWave: "-10"
+          - name: gateway-ingestor
+            chartPath: argoCD/helm/services/gateway-ingestor
+            syncWave: "0"
   template:
     metadata:
-      name: "dev-{{ path.basename }}"
+      name: "dev-{{name}}"
+      annotations:
+        # Foundation (-20) -> runtime/Consul (-15) -> Config (-10) -> Edge (0).
+        argocd.argoproj.io/sync-wave: "{{syncWave}}"
       labels:
         environment: dev
-        app.kubernetes.io/name: "{{ path.basename }}"
+        app.kubernetes.io/name: "{{name}}"
     spec:
       project: spaceup-platform-dev
       source:
         repoURL: https://github.com/AchivaE/gitOpsCD.git
-        path: "{{ path }}"
+        path: "{{chartPath}}"
         targetRevision: main
         helm:
           valueFiles: [values.yaml, values-dev.yaml, values-local.yaml]

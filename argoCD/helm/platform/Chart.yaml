@@ -4,6 +4,7 @@ description: "Umbrella chart for the spaceUP platform — orchestre les sous-cha
 type: application
 version: 1.0.0
 appVersion: "1.0.0"
+deprecated: true
 
 keywords:
   - platform
@@ -23,7 +24,8 @@ maintainers:
 
 
 annotations:
-  chart-type: "umbrella"
+  chart-type: "legacy-umbrella"
+  platform.spaceup.io/deprecation: "Use helm/cluster-addons or helm/platform/<module>; never create an Argo Application from this chart."
 
 dependencies:
 

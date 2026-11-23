@@ -10,6 +10,5 @@ resources:
   - ../../config
   - ../../secrets
   - ../../applications/platform-prod
-  - ../../applications/platform-consul-prod
   - ../../applications/services-prod
   - ../../security

@@ -1,4 +1,12 @@
-# Platform chart boundaries
+# Deprecated platform umbrella chart
+
+This chart is retained only to preserve repository history. It is **not** an
+Argo CD source and must not be enabled for Consul, Keycloak, PostgreSQL, Redis,
+observability or security controls. Each product has a separate operational
+lifecycle and belongs in `cluster-addons` or `platform/<module>`. See
+[`../../ARCHITECTURE.md`](../../ARCHITECTURE.md).
+
+## Historical chart boundaries
 
 This chart is synchronized once per application environment. It contains only components that can safely be scoped to that environment.
 

@@ -20,6 +20,14 @@ function Require-Text {
     }
 }
 
+function Require-TextAbsent {
+    param([string]$Path, [string]$Text)
+    Require-Path $Path
+    if (Select-String -LiteralPath $Path -SimpleMatch $Text -Quiet) {
+        throw "Forbidden configuration '$Text' in $Path"
+    }
+}
+
 function Render-Chart {
     param([string]$Release, [string]$Chart, [string]$Namespace, [string[]]$Values)
     helm lint $Chart @Values
@@ -40,6 +48,26 @@ Require-Text $consulApp 'path: argoCD/helm/platform/consul'
 Require-Text $consulProject 'kind: ClusterRole'
 Require-Text (Join-Path $argoRoot 'overlays\local\kustomization.yaml') '../../applications/platform-consul-local'
 Require-Text (Join-Path $argoRoot 'namespaces\local\platform-runtime.yaml') 'name: platform-runtime'
+Require-TextAbsent (Join-Path $argoRoot 'overlays\azure-staging\kustomization.yaml') '../../applications/platform-consul-staging'
+Require-TextAbsent (Join-Path $argoRoot 'overlays\azure-prod\kustomization.yaml') '../../applications/platform-consul-prod'
+
+foreach ($applicationSet in @(
+    (Join-Path $argoRoot 'applications\services-dev\applicationset.yaml'),
+    (Join-Path $argoRoot 'applications\services-staging\applicationset.yaml'),
+    (Join-Path $argoRoot 'applications\services-prod\applicationset.yaml')
+)) {
+    Require-TextAbsent $applicationSet 'directories:'
+    Require-Text $applicationSet 'chartPath: argoCD/helm/services/config-ingestor'
+    Require-Text $applicationSet 'chartPath: argoCD/helm/services/gateway-ingestor'
+    Require-Text $applicationSet 'syncWave: "-10"'
+    Require-Text $applicationSet 'syncWave: "0"'
+}
+
+$deprecatedPlatformSource = Get-ChildItem -LiteralPath $argoRoot -Recurse -File -Filter '*.yaml' |
+    Select-String -Pattern '^\s*path:\s*argoCD/helm/platform\s*$'
+if ($deprecatedPlatformSource) {
+    throw "The deprecated helm/platform umbrella chart is referenced by Argo: $($deprecatedPlatformSource.Path)"
+}
 
 Render-Chart 'config-ingestor' (Join-Path $repositoryRoot 'argoCD\helm\services\config-ingestor') 'spaceup-dev' @(
     '-f', (Join-Path $repositoryRoot 'argoCD\helm\services\config-ingestor\values.yaml'),

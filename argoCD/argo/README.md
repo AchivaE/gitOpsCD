@@ -14,6 +14,11 @@ The directory is split by operational responsibility:
 - `security/`: Argo CD RBAC and retained legacy policy material;
 - `config/`: optional Argo CD configuration overrides, not enabled until explicitly added to `kustomization.yaml`.
 
+The distributed-service boundary, namespace model and mandatory dependency
+order are defined in [`../ARCHITECTURE.md`](../ARCHITECTURE.md). In particular,
+an ApplicationSet uses an explicit service catalogue; adding a chart directory
+does not authorize a workload in an environment.
+
 Adding a manifest to a folder does not deploy it. It becomes active only when
 referenced by the selected target overlay. This prevents accidental production
 changes on a development cluster.

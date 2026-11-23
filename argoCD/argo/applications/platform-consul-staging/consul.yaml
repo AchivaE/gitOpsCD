@@ -4,6 +4,10 @@ metadata:
   name: platform-consul-staging
   namespace: argocd
   annotations:
+    # Not referenced by the standard staging overlay. Retained only as an
+    # explicit, self-managed Consul-on-Kubernetes alternative.
+    platform.spaceup.io/deployment-mode: self-managed-incluster
+    platform.spaceup.io/standard-profile: disabled
     argocd.argoproj.io/sync-wave: "-15"
 spec:
   project: spaceup-platform-runtime

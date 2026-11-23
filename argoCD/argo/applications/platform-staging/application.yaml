@@ -4,7 +4,8 @@ metadata:
   name: cluster-addons-staging
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-4"
+    # Foundation must precede platform runtime and application control planes.
+    argocd.argoproj.io/sync-wave: "-20"
 spec:
   project: spaceup-cluster-addons
   source:

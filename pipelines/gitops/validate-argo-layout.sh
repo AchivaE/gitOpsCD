@@ -58,7 +58,13 @@ done
 require_text "${argo_root}/bootstrap/argocd-bootstrap.yaml" "path: argoCD/argo/overlays/local"
 require_text "${argo_root}/bootstrap/argocd-bootstrap-azure-staging.yaml" "path: argoCD/argo/overlays/azure-staging"
 require_text "${argo_root}/bootstrap/argocd-bootstrap-azure-prod.yaml" "path: argoCD/argo/overlays/azure-prod"
-require_text "${argo_root}/applications/services-dev/applicationset.yaml" "path: argoCD/helm/services/*"
+require_absent "${argo_root}/applications/services-dev/applicationset.yaml" "directories:"
+require_absent "${argo_root}/applications/services-staging/applicationset.yaml" "directories:"
+require_absent "${argo_root}/applications/services-prod/applicationset.yaml" "directories:"
+require_text "${argo_root}/applications/services-dev/applicationset.yaml" "chartPath: argoCD/helm/services/config-ingestor"
+require_text "${argo_root}/applications/services-dev/applicationset.yaml" "chartPath: argoCD/helm/services/gateway-ingestor"
+require_text "${argo_root}/applications/services-dev/applicationset.yaml" "syncWave: \"-10\""
+require_text "${argo_root}/applications/services-dev/applicationset.yaml" "syncWave: \"0\""
 require_text "${argo_root}/applications/services-dev/applicationset.yaml" "values-local.yaml"
 require_text "${argo_root}/applications/services-staging/applicationset.yaml" "values-azure.yaml"
 require_text "${argo_root}/applications/services-prod/applicationset.yaml" "values-prod.yaml"
@@ -79,13 +85,24 @@ require_text "${argo_root}/applications/platform-prod/application.yaml" "path: a
 require_text "${argo_root}/projects/cluster-addons/project.yaml" "namespace: external-secrets"
 require_text "${argo_root}/overlays/local/kustomization.yaml" "../../projects/platform-runtime"
 require_text "${argo_root}/overlays/local/kustomization.yaml" "../../applications/platform-consul-local"
+require_absent "${argo_root}/overlays/azure-staging/kustomization.yaml" "../../applications/platform-consul-staging"
+require_absent "${argo_root}/overlays/azure-prod/kustomization.yaml" "../../applications/platform-consul-prod"
 require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "name: platform-consul-local"
 require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "path: argoCD/helm/platform/consul"
 require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "values-local.yaml"
 require_text "${argo_root}/projects/platform-runtime/project.yaml" "namespace: platform-runtime"
 require_text "${argo_root}/namespaces/local/platform-runtime.yaml" "name: platform-runtime"
+require_text "${argo_root}/applications/platform-local/application.yaml" "sync-wave: \"-20\""
+require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "sync-wave: \"-15\""
 require_text "${argo_root}/config/argocd-cm-health.yaml" "argocd.argoproj.io/sync-wave: \"-40\""
 require_text "${argo_root}/config/argocd-cm-health.yaml" "resource.customizations.health.argoproj.io_Application"
+
+# The old umbrella chart is retained for history only. Platform products must
+# be dedicated modules so stateful lifecycles cannot be coupled accidentally.
+if grep -R -E '^[[:space:]]*path:[[:space:]]*argoCD/helm/platform[[:space:]]*$' "${argo_root}"; then
+  echo "The deprecated helm/platform umbrella chart must not be an Argo source." >&2
+  exit 1
+fi
 
 render() {
   local release="$1"

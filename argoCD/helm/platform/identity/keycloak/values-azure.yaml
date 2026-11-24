@@ -1,0 +1,5 @@
+# AKS-specific values are deliberately limited to the selected ingress class.
+# Database and certificate endpoints remain secrets/provider configuration.
+keycloak:
+  ingress:
+    ingressClassName: azure-application-gateway

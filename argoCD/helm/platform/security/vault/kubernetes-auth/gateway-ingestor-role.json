@@ -1,0 +1,8 @@
+{
+  "bound_service_account_names": ["gateway-ingestor"],
+  "bound_service_account_namespaces": ["REPLACE_WITH_TARGET_WORKLOAD_NAMESPACE"],
+  "policies": ["gateway-ingestor"],
+  "ttl": "15m",
+  "max_ttl": "1h",
+  "audience": "vault"
+}

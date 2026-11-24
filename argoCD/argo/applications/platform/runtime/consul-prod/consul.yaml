@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-consul-prod
+  namespace: argocd
+  annotations:
+    # Not referenced by the standard production overlay. Retained only as an
+    # explicit, self-managed Consul-on-Kubernetes alternative.
+    platform.spaceup.io/deployment-mode: self-managed-incluster
+    platform.spaceup.io/standard-profile: disabled
+    argocd.argoproj.io/sync-wave: "-15"
+spec:
+  project: spaceup-platform-runtime
+  source:
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    targetRevision: main
+    path: argoCD/helm/platform/runtime/consul
+    helm:
+      valueFiles: [values.yaml, values-azure.yaml, values-prod.yaml]
+      version: v3
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-runtime
+  syncPolicy:
+    syncOptions:
+      - PrunePropagationPolicy=foreground
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true

@@ -7,10 +7,15 @@
 | GitOps manifests | 1 hour | 1 hour | protected Git mirror and tested bootstrap |
 | Kubernetes workload manifests | 24 hours | 4 hours | successful Velero backup and restore drill |
 | Persistent application data | workload-specific | workload-specific | database-native restore test |
+| Keycloak PostgreSQL | proposed: 15 minutes | proposed: 4 hours | isolated PITR restore and Keycloak login evidence |
 | Vault and Consul control planes | operator-defined | operator-defined | independent backup/restore exercise |
 
 These are proposed objectives, not achieved commitments. Product, security and
 service owners must approve the final RPO/RTO per data classification.
+
+Keycloak's database HA failover is not a recovery procedure for logical data
+loss. The PostgreSQL runbook requires an isolated point-in-time restore drill:
+see [POSTGRESQL-KEYCLOAK.md](POSTGRESQL-KEYCLOAK.md).
 
 ## Velero release gate
 

@@ -1,0 +1,11 @@
+certificateIssuers:
+  enabled: true
+  acmeEmail: security@spaceup.org
+  ingressClassName: ""
+  issuers:
+    staging: { name: letsencrypt-staging, server: https://acme-staging-v02.api.letsencrypt.org/directory, accountKeySecret: letsencrypt-staging-account-key }
+    production: { name: letsencrypt-prod, server: https://acme-v02.api.letsencrypt.org/directory, accountKeySecret: letsencrypt-prod-account-key }
+cert-manager:
+  crds: { enabled: true }
+  clusterResourceNamespace: platform-system
+  prometheus: { enabled: true, servicemonitor: { enabled: true } }

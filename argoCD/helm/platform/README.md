@@ -1,21 +1,22 @@
-# Deprecated platform umbrella chart
+# Platform modules
 
-This chart is retained only to preserve repository history. It is **not** an
-Argo CD source and must not be enabled for Consul, Keycloak, PostgreSQL, Redis,
-observability or security controls. Each product has a separate operational
-lifecycle and belongs in `cluster-addons` or `platform/<module>`. See
-[`../../ARCHITECTURE.md`](../../ARCHITECTURE.md).
+This directory is a module catalogue, not a Helm chart. It deliberately has no
+root `Chart.yaml`, templates, values files or vendored dependencies.
 
-## Historical chart boundaries
+Each stateful platform product owns one dedicated Helm chart and one dedicated
+Argo CD Application. This prevents an update of Consul, Keycloak or a future
+broker from changing an unrelated product.
 
-This chart is synchronized once per application environment. It contains only components that can safely be scoped to that environment.
+| Module | Path | Standard deployment model |
+| --- | --- | --- |
+| Consul | `platform/runtime/consul` | local Kubernetes validation only; private external HA control plane for staging/prod |
+| Keycloak | `platform/identity/keycloak` | dedicated identity plane, external PostgreSQL HA; activation gated |
+| Kafka | `platform/eventing/kafka` | explicit local single-node KRaft validation module; managed private event plane for staging/prod |
+| Vault | `platform/security/vault` | external private HA security plane; no server chart in Argo CD |
+| PostgreSQL | `platform/databases/postgresql` | external managed HA database contract; no in-cluster production chart |
+| Logging / tracing | `platform/observability/logging`, `platform/observability/tracing` | activation contracts pending approved object storage and recovery evidence |
 
-It intentionally does **not** enable the following incomplete or cluster-wide components:
-
-- Consul: requires a dedicated module with ACL bootstrap, TLS, gossip encryption, persistent storage and backup/restore testing.
-- PostgreSQL, Redis and Keycloak: stateful services need independent lifecycle, backups, recovery objectives and secrets.
-- Loki: requires Azure Blob containers plus workload identity before activation.
-- Gatekeeper: constraints must be paired with tested ConstraintTemplates.
-- namespace-wide RBAC, PDB and NetworkPolicy: service charts own least-privilege RBAC, disruption budgets and network rules.
-
-Cluster-wide add-ons such as cert-manager and kube-prometheus-stack must be deployed once in a dedicated cluster-addons application, not once for each environment. This is the next platform submodule.
+Cluster-scoped products (cert-manager, monitoring, alerting) remain in
+`../foundation` and `platform/observability`. Technical services remain in
+`../services`; business workloads have their own future catalogue.
+The architecture rules are in [`../../ARCHITECTURE.md`](../../ARCHITECTURE.md).

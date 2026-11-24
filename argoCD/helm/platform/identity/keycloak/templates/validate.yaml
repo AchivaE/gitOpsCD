@@ -1,0 +1,34 @@
+{{- $keycloak := .Values.keycloak -}}
+{{- if eq .Values.platform.environment "unset" -}}
+{{- fail "Set platform.environment to staging or prod." -}}
+{{- end -}}
+{{- if not .Values.externalSecrets.enabled -}}
+{{- fail "Keycloak requires External Secrets for admin, database and TLS material." -}}
+{{- end -}}
+{{- if $keycloak.postgresql.enabled -}}
+{{- fail "Embedded PostgreSQL is forbidden. Use an external HA PostgreSQL service." -}}
+{{- end -}}
+{{- if not $keycloak.externalDatabase.existingSecret -}}
+{{- fail "Keycloak requires an externalDatabase.existingSecret." -}}
+{{- end -}}
+{{- if not $keycloak.tls.enabled -}}
+{{- fail "Keycloak requires TLS to be enabled." -}}
+{{- end -}}
+{{- if not $keycloak.tls.existingSecret -}}
+{{- fail "Keycloak requires an internal TLS secret." -}}
+{{- end -}}
+{{- if not $keycloak.ingress.hostnameStrict -}}
+{{- fail "Keycloak requires ingress.hostnameStrict=true." -}}
+{{- end -}}
+{{- if hasPrefix "REPLACE_WITH_" $keycloak.ingress.hostname -}}
+{{- fail "Set the Keycloak public hostname before activation." -}}
+{{- end -}}
+{{- if hasPrefix "REPLACE_WITH_" .Values.externalSecrets.dbHostRemoteKey -}}
+{{- fail "Set all Keycloak External Secret remote keys before activation." -}}
+{{- end -}}
+{{- if and (eq .Values.platform.environment "prod") (lt (int $keycloak.replicaCount) 3) -}}
+{{- fail "Production Keycloak requires at least three replicas." -}}
+{{- end -}}
+{{- if and (eq .Values.platform.environment "prod") (lt (int $keycloak.pdb.minAvailable) 2) -}}
+{{- fail "Production Keycloak requires a PDB retaining at least two replicas." -}}
+{{- end -}}

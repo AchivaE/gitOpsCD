@@ -1,0 +1,8 @@
+platform:
+  environment: local
+
+kafka:
+  # Minikube's default storage class dynamically provisions this PVC.
+  controller:
+    persistence:
+      storageClass: ""

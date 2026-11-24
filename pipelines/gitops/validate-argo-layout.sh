@@ -1,154 +1,94 @@
 #!/usr/bin/env bash
-# Static preflight for the exact Argo CD source layout in this repository.
-# It has no kubeconfig, cloud, registry, Git provider or Argo API use.
+# Offline structural preflight: no cluster, cloud, registry or Git API access.
 set -euo pipefail
 
 script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-delivery_root="$(CDPATH= cd -- "${script_dir}/../.." && pwd)"
-repository_root="$(git -C "${delivery_root}" rev-parse --show-toplevel)"
-argo_root="${delivery_root}/argoCD/argo"
+root="$(CDPATH= cd -- "${script_dir}/../.." && pwd)"
+argo="${root}/argoCD/argo"
 
-require_file() {
-  test -f "$1" || { echo "missing required file: $1" >&2; exit 1; }
-}
+need_dir() { test -d "$1" || { echo "missing directory: $1" >&2; exit 1; }; }
+need_file() { test -f "$1" || { echo "missing file: $1" >&2; exit 1; }; }
+must_contain() { grep -Fq "$2" "$1" || { echo "missing '$2' in $1" >&2; exit 1; }; }
+must_not_contain() { ! grep -Fq "$2" "$1" || { echo "forbidden '$2' in $1" >&2; exit 1; }; }
+render() { helm lint "$2" "${@:4}" && helm template "$1" "$2" --namespace "$3" "${@:4}" >/dev/null; }
 
-require_text() {
-  grep -Fq "$2" "$1" || { echo "missing required configuration in $1: $2" >&2; exit 1; }
-}
+cert="${root}/argoCD/helm/foundation/networking/cert-manager"
+external_secrets="${root}/argoCD/helm/foundation/security/external-secrets"
+policy_engine="${root}/argoCD/helm/foundation/security/policy-engine"
+monitoring="${root}/argoCD/helm/platform/observability/monitoring"
+consul="${root}/argoCD/helm/platform/runtime/consul"
+kafka="${root}/argoCD/helm/platform/eventing/kafka"
+keycloak="${root}/argoCD/helm/platform/identity/keycloak"
+config="${root}/argoCD/helm/services/configuration/config-server"
+gateway="${root}/argoCD/helm/services/networking/api-gateway"
+workload_contract="${root}/argoCD/contracts/MICROSERVICE-DEPLOYMENT-CONTRACT.md"
 
-require_absent() {
-  ! grep -Fq "$2" "$1" || { echo "forbidden configuration in $1: $2" >&2; exit 1; }
-}
+for chart in "$cert" "$external_secrets" "$policy_engine" "$monitoring" "$consul" "$kafka" "$keycloak" "$config" "$gateway"; do need_dir "$chart"; done
+need_file "$workload_contract"
+test ! -d "${root}/argoCD/helm/cluster-addons" || { echo "legacy composite cluster-addons must not exist" >&2; exit 1; }
+test ! -f "${argo}/security/pod-security-policy.yaml" || { echo "removed PodSecurityPolicy manifest must not exist" >&2; exit 1; }
+must_not_contain "${argo}/management/argocd/rbac/rbac.yaml" "name: argocd-applications"
+must_not_contain "${argo}/management/argocd/config/argocd-cm-health.yaml" "security.istio.io_PeerAuthentication"
 
-for file in \
-  "${argo_root}/bootstrap/argocd-bootstrap.yaml" \
-  "${argo_root}/bootstrap/argocd-bootstrap-azure-staging.yaml" \
-  "${argo_root}/bootstrap/argocd-bootstrap-azure-prod.yaml" \
-  "${argo_root}/applications/services-dev/applicationset.yaml" \
-  "${argo_root}/applications/services-staging/applicationset.yaml" \
-  "${argo_root}/applications/services-prod/applicationset.yaml" \
-  "${argo_root}/applications/platform-local/application.yaml" \
-  "${argo_root}/applications/platform-staging/application.yaml" \
-  "${argo_root}/applications/platform-prod/application.yaml" \
-  "${argo_root}/applications/platform-consul-local/consul.yaml" \
-  "${argo_root}/applications/platform-consul-staging/consul.yaml" \
-  "${argo_root}/applications/platform-consul-prod/consul.yaml" \
-  "${argo_root}/projects/cluster-addons/project.yaml" \
-  "${argo_root}/projects/platform-runtime/project.yaml" \
-  "${argo_root}/namespaces/local/namespace.yaml" \
-  "${argo_root}/namespaces/local/platform-runtime.yaml" \
-  "${argo_root}/namespaces/azure-staging/namespace.yaml" \
-  "${argo_root}/namespaces/azure-prod/namespace.yaml" \
-  "${argo_root}/config/argocd-cm-health.yaml"; do
-  require_file "$file"
+for overlay in local azure-staging azure-prod; do
+  need_file "${argo}/overlays/${overlay}/kustomization.yaml"
+  kubectl kustomize "${argo}/overlays/${overlay}" >/dev/null
 done
 
-# These are paths from the Git repository root.
-for path in \
-  argoCD/argo/overlays/local \
-  argoCD/argo/overlays/azure-staging \
-  argoCD/argo/overlays/azure-prod \
-  argoCD/helm/cluster-addons \
-  argoCD/helm/platform/consul \
-  argoCD/helm/services/config-ingestor \
-  argoCD/helm/services/gateway-ingestor; do
-  test -d "${repository_root}/${path}" || { echo "Argo Git path does not exist: ${path}" >&2; exit 1; }
+must_contain "${argo}/overlays/local/kustomization.yaml" "applications/foundation/networking/cert-manager-local"
+must_contain "${argo}/overlays/local/kustomization.yaml" "management/argocd/config"
+must_contain "${argo}/overlays/local/kustomization.yaml" "management/argocd/rbac"
+must_contain "${argo}/overlays/local/kustomization.yaml" "applications/foundation/security/policy-engine/local"
+must_contain "${argo}/overlays/local/kustomization.yaml" "applications/platform/observability/monitoring-local"
+must_contain "${argo}/overlays/local/kustomization.yaml" "applications/services/configuration/config-server/local"
+must_contain "${argo}/overlays/local/kustomization.yaml" "applications/services/networking/api-gateway/local"
+must_not_contain "${argo}/overlays/local/kustomization.yaml" "applications/workloads/api-platform"
+for overlay in azure-staging azure-prod; do
+  must_contain "${argo}/namespaces/${overlay}/kustomization.yaml" "platform-identity.yaml"
+  must_contain "${argo}/overlays/${overlay}/kustomization.yaml" "projects/identity"
+  must_not_contain "${argo}/overlays/${overlay}/kustomization.yaml" "applications/platform/identity/keycloak"
 done
 
-require_text "${argo_root}/bootstrap/argocd-bootstrap.yaml" "path: argoCD/argo/overlays/local"
-require_text "${argo_root}/bootstrap/argocd-bootstrap-azure-staging.yaml" "path: argoCD/argo/overlays/azure-staging"
-require_text "${argo_root}/bootstrap/argocd-bootstrap-azure-prod.yaml" "path: argoCD/argo/overlays/azure-prod"
-require_absent "${argo_root}/applications/services-dev/applicationset.yaml" "directories:"
-require_absent "${argo_root}/applications/services-staging/applicationset.yaml" "directories:"
-require_absent "${argo_root}/applications/services-prod/applicationset.yaml" "directories:"
-require_text "${argo_root}/applications/services-dev/applicationset.yaml" "chartPath: argoCD/helm/services/config-ingestor"
-require_text "${argo_root}/applications/services-dev/applicationset.yaml" "chartPath: argoCD/helm/services/gateway-ingestor"
-require_text "${argo_root}/applications/services-dev/applicationset.yaml" "syncWave: \"-10\""
-require_text "${argo_root}/applications/services-dev/applicationset.yaml" "syncWave: \"0\""
-require_text "${argo_root}/applications/services-dev/applicationset.yaml" "values-local.yaml"
-require_text "${argo_root}/applications/services-staging/applicationset.yaml" "values-azure.yaml"
-require_text "${argo_root}/applications/services-prod/applicationset.yaml" "values-prod.yaml"
-require_absent "${argo_root}/applications/services-dev/applicationset.yaml" "CreateNamespace=true"
-require_absent "${argo_root}/applications/services-staging/applicationset.yaml" "CreateNamespace=true"
-require_absent "${argo_root}/applications/services-prod/applicationset.yaml" "CreateNamespace=true"
-require_text "${argo_root}/overlays/local/kustomization.yaml" "../../namespaces/local"
-require_text "${argo_root}/overlays/azure-staging/kustomization.yaml" "../../namespaces/azure-staging"
-require_text "${argo_root}/overlays/azure-prod/kustomization.yaml" "../../namespaces/azure-prod"
-require_text "${argo_root}/namespaces/local/namespace.yaml" "name: spaceup-dev"
-require_text "${argo_root}/namespaces/azure-staging/namespace.yaml" "name: spaceup-staging"
-require_text "${argo_root}/namespaces/azure-prod/namespace.yaml" "name: spaceup"
-require_text "${argo_root}/applications/platform-local/application.yaml" "name: cluster-addons-local"
-require_text "${argo_root}/applications/platform-local/application.yaml" "SkipDryRunOnMissingResource=true"
-require_text "${argo_root}/applications/platform-local/application.yaml" "values-local.yaml"
-require_text "${argo_root}/projects/cluster-addons/project.yaml" "namespace: kube-system"
-require_text "${argo_root}/applications/platform-prod/application.yaml" "path: argoCD/helm/cluster-addons"
-require_text "${argo_root}/projects/cluster-addons/project.yaml" "namespace: external-secrets"
-require_text "${argo_root}/overlays/local/kustomization.yaml" "../../projects/platform-runtime"
-require_text "${argo_root}/overlays/local/kustomization.yaml" "../../applications/platform-consul-local"
-require_absent "${argo_root}/overlays/azure-staging/kustomization.yaml" "../../applications/platform-consul-staging"
-require_absent "${argo_root}/overlays/azure-prod/kustomization.yaml" "../../applications/platform-consul-prod"
-require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "name: platform-consul-local"
-require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "path: argoCD/helm/platform/consul"
-require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "values-local.yaml"
-require_text "${argo_root}/projects/platform-runtime/project.yaml" "namespace: platform-runtime"
-require_text "${argo_root}/namespaces/local/platform-runtime.yaml" "name: platform-runtime"
-require_text "${argo_root}/applications/platform-local/application.yaml" "sync-wave: \"-20\""
-require_text "${argo_root}/applications/platform-consul-local/consul.yaml" "sync-wave: \"-15\""
-require_text "${argo_root}/config/argocd-cm-health.yaml" "argocd.argoproj.io/sync-wave: \"-40\""
-require_text "${argo_root}/config/argocd-cm-health.yaml" "resource.customizations.health.argoproj.io_Application"
+for overlay in azure-staging azure-prod; do
+  must_not_contain "${argo}/overlays/${overlay}/kustomization.yaml" "applications/foundation/security/external-secrets"
+  must_not_contain "${argo}/overlays/${overlay}/kustomization.yaml" "applications/foundation/security/policy-engine"
+  must_not_contain "${argo}/overlays/${overlay}/kustomization.yaml" "applications/foundation/networking/cert-manager"
+  must_not_contain "${argo}/overlays/${overlay}/kustomization.yaml" "applications/platform/observability/monitoring"
+  must_not_contain "${argo}/overlays/${overlay}/kustomization.yaml" "applications/services/"
+done
+must_contain "${argo}/applications/foundation/security/external-secrets/application.yaml" "path: argoCD/helm/foundation/security/external-secrets"
+must_contain "${external_secrets}/values.yaml" "installCRDs: true"
+must_contain "${argo}/foundation/security/external-secrets/azure/key-vault-secret-store.yaml" "authType: WorkloadIdentity"
 
-# The old umbrella chart is retained for history only. Platform products must
-# be dedicated modules so stateful lifecycles cannot be coupled accidentally.
-if grep -R -E '^[[:space:]]*path:[[:space:]]*argoCD/helm/platform[[:space:]]*$' "${argo_root}"; then
-  echo "The deprecated helm/platform umbrella chart must not be an Argo source." >&2
-  exit 1
-fi
+must_contain "${argo}/applications/services/configuration/config-server/local/application.yaml" "sync-wave: \"-10\""
+must_contain "${argo}/applications/services/networking/api-gateway/local/application.yaml" "sync-wave: \"0\""
+must_contain "${argo}/applications/platform/runtime/consul-local/consul.yaml" "sync-wave: \"-15\""
+must_contain "${argo}/applications/foundation/networking/cert-manager-local/application.yaml" "sync-wave: \"-20\""
+must_contain "${argo}/applications/foundation/networking/cert-manager-local/application.yaml" "platform.spaceup.io/migration-mode: manual-sync-required"
+must_contain "${argo}/applications/platform/observability/monitoring-local/application.yaml" "platform.spaceup.io/migration-mode: manual-sync-required"
+must_contain "${argo}/applications/foundation/security/policy-engine/local/application.yaml" "sync-wave: \"-17\""
+must_contain "${argo}/applications/platform/observability/monitoring-local/application.yaml" "sync-wave: \"-18\""
 
-render() {
-  local release="$1"
-  local chart="$2"
-  local namespace="$3"
-  shift 3
-  helm lint "$chart" "$@"
-  helm template "$release" "$chart" --namespace "$namespace" "$@" >/dev/null
-}
+while IFS= read -r app; do
+  if grep -Fq 'automated:' "$app"; then
+    echo "staging and production Applications must not auto-sync a mutable revision: $app" >&2
+    exit 1
+  fi
+done < <(find "${argo}/applications" -type f \( -path '*/staging/*.yaml' -o -path '*/prod/*.yaml' \))
 
-render config-ingestor "${delivery_root}/argoCD/helm/services/config-ingestor" spaceup-dev \
-  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-dev.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-local.yaml"
+must_not_contain "${argo}/bootstrap/argocd-bootstrap-azure-staging.yaml" "automated:"
+must_not_contain "${argo}/bootstrap/argocd-bootstrap-azure-prod.yaml" "automated:"
 
-config_manifest="$(helm template config-ingestor "${delivery_root}/argoCD/helm/services/config-ingestor" --namespace spaceup-dev \
-  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-dev.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/config-ingestor/values-local.yaml")"
-printf '%s\n' "${config_manifest}" | grep -Fq "startupProbe:" || { echo "Config Ingestor startupProbe is required" >&2; exit 1; }
-printf '%s\n' "${config_manifest}" | grep -Fq "failureThreshold: 30" || { echo "Config Ingestor must allow its configured startup window" >&2; exit 1; }
-render gateway-ingestor "${delivery_root}/argoCD/helm/services/gateway-ingestor" spaceup-dev \
-  -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-dev.yaml" \
-  -f "${delivery_root}/argoCD/helm/services/gateway-ingestor/values-local.yaml"
-render cluster-addons-local "${delivery_root}/argoCD/helm/cluster-addons" platform-system \
-  -f "${delivery_root}/argoCD/helm/cluster-addons/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/cluster-addons/values-local.yaml"
-render cluster-addons-staging "${delivery_root}/argoCD/helm/cluster-addons" platform-system \
-  -f "${delivery_root}/argoCD/helm/cluster-addons/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/cluster-addons/values-azure.yaml" \
-  -f "${delivery_root}/argoCD/helm/cluster-addons/values-staging.yaml"
-render cluster-addons-prod "${delivery_root}/argoCD/helm/cluster-addons" platform-system \
-  -f "${delivery_root}/argoCD/helm/cluster-addons/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/cluster-addons/values-azure.yaml" \
-  -f "${delivery_root}/argoCD/helm/cluster-addons/values-prod.yaml"
-render platform-consul-local "${delivery_root}/argoCD/helm/platform/consul" platform-runtime \
-  -f "${delivery_root}/argoCD/helm/platform/consul/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/platform/consul/values-local.yaml"
-render platform-consul-staging "${delivery_root}/argoCD/helm/platform/consul" platform-runtime \
-  -f "${delivery_root}/argoCD/helm/platform/consul/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/platform/consul/values-azure.yaml" \
-  -f "${delivery_root}/argoCD/helm/platform/consul/values-staging.yaml"
-render platform-consul-prod "${delivery_root}/argoCD/helm/platform/consul" platform-runtime \
-  -f "${delivery_root}/argoCD/helm/platform/consul/values.yaml" \
-  -f "${delivery_root}/argoCD/helm/platform/consul/values-azure.yaml" \
-  -f "${delivery_root}/argoCD/helm/platform/consul/values-prod.yaml"
+render config-ingestor "$config" spaceup-dev -f "$config/values.yaml" -f "$config/values-dev.yaml" -f "$config/values-local.yaml"
+render gateway-ingestor "$gateway" spaceup-dev -f "$gateway/values.yaml" -f "$gateway/values-dev.yaml" -f "$gateway/values-local.yaml"
+render config-ingestor-contract "$config" spaceup-staging -f "$config/values.yaml" -f "$config/values-contract-test.yaml"
+render gateway-ingestor-contract "$gateway" spaceup-staging -f "$gateway/values.yaml" -f "$gateway/values-contract-test.yaml"
+render foundation-cert-manager-local "$cert" platform-system -f "$cert/values.yaml" -f "$cert/values-local.yaml"
+render external-secrets-contract "$external_secrets" external-secrets -f "$external_secrets/values.yaml"
+render foundation-policy-engine-local "$policy_engine" kyverno -f "$policy_engine/values.yaml" -f "$policy_engine/values-local.yaml"
+render platform-monitoring-local "$monitoring" platform-system -f "$monitoring/values.yaml" -f "$monitoring/values-local.yaml"
+render platform-consul-local "$consul" platform-runtime -f "$consul/values.yaml" -f "$consul/values-local.yaml"
+render platform-kafka-local "$kafka" platform-runtime -f "$kafka/values.yaml" -f "$kafka/values-local.yaml"
+render platform-keycloak-contract "$keycloak" platform-identity -f "$keycloak/values.yaml" -f "$keycloak/values-azure.yaml" -f "$keycloak/values-contract-test.yaml"
 
-echo "Argo CD source layout and active Helm render preflight passed."
+echo "GitOps architecture preflight passed."

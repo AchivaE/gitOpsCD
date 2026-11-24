@@ -1,0 +1,10 @@
+apiVersion: v2
+name: cert-manager
+description: Cluster certificate lifecycle foundation for SpaceUp.
+type: application
+version: 0.1.0
+appVersion: v1.15.3
+dependencies:
+  - name: cert-manager
+    version: v1.15.3
+    repository: file://charts

@@ -1,0 +1,15 @@
+{{- if ne .Values.platform.environment "local" }}
+{{- fail "platform/kafka is local-only. Use the external private Kafka event-plane for staging and production." }}
+{{- end }}
+{{- if ne (int .Values.kafka.controller.replicaCount) 1 }}
+{{- fail "local Kafka must use exactly one controller+broker node." }}
+{{- end }}
+{{- if .Values.kafka.controller.controllerOnly }}
+{{- fail "local Kafka requires its sole controller to also be the broker." }}
+{{- end }}
+{{- if ne (int .Values.kafka.broker.replicaCount) 0 }}
+{{- fail "local Kafka must not create broker-only nodes." }}
+{{- end }}
+{{- if not .Values.kafka.controller.persistence.enabled }}
+{{- fail "local Kafka persistence must remain enabled; ephemeral event data is not a valid test target." }}
+{{- end }}

@@ -12,7 +12,11 @@ script_dir="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 delivery_root="$(CDPATH= cd -- "${script_dir}/../.." && pwd)"
 repository_root="$(git -C "${delivery_root}" rev-parse --show-toplevel)"
 
-case "$service" in config-ingestor|gateway-ingestor) ;; *) echo "unsupported service: $service" >&2; exit 2 ;; esac
+case "$service" in
+  config-ingestor) chart_relative_path="argoCD/helm/services/configuration/config-server" ;;
+  gateway-ingestor) chart_relative_path="argoCD/helm/services/networking/api-gateway" ;;
+  *) echo "unsupported platform service: $service" >&2; exit 2 ;;
+esac
 case "$environment" in dev|staging|prod) ;; *) echo "unsupported environment: $environment" >&2; exit 2 ;; esac
 case "$provider" in local|azure|aws) ;; *) echo "unsupported provider profile: $provider" >&2; exit 2 ;; esac
 if ! [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
@@ -20,7 +24,7 @@ if ! [[ "$digest" =~ ^sha256:[a-f0-9]{64}$ ]]; then
   exit 2
 fi
 
-chart_path="${delivery_root}/argoCD/helm/services/${service}"
+chart_path="${delivery_root}/${chart_relative_path}"
 values_file="${chart_path}/values-${environment}.yaml"
 provider_values_file="${chart_path}/values-${provider}.yaml"
 

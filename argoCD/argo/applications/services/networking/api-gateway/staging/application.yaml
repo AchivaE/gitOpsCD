@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: staging-gateway-ingestor
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "0" }
+spec:
+  project: spaceup-platform-staging
+  source:
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    targetRevision: main
+    path: argoCD/helm/services/networking/api-gateway
+    helm: { valueFiles: [values.yaml, values-azure.yaml, values-staging.yaml], version: v3 }
+  destination: { server: https://kubernetes.default.svc, namespace: spaceup-staging }
+  syncPolicy:
+    syncOptions: [PrunePropagationPolicy=foreground, RespectIgnoreDifferences=true, ServerSideApply=true, SkipSchemaValidation=false]

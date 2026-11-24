@@ -39,7 +39,8 @@ chart source change is needed.
 ### Argo CD development environment
 
 The explicit development catalogue in
-`argoCD/argo/applications/services-dev/applicationset.yaml` applies
+`argoCD/argo/applications/services/configuration/config-server/local/application.yaml` and
+`argoCD/argo/applications/services/networking/api-gateway/local/application.yaml` apply
 `values.yaml`, `values-dev.yaml`, then `values-local.yaml`. The local layer
 therefore wins for developer image names and disables cloud dependencies.
 Before synchronizing `dev`, make the image references declared in
@@ -65,8 +66,8 @@ does not automatically replace a cached `IfNotPresent` image.
 
 Argo CD applies, in order, `values.yaml`, `values-<provider>.yaml`, then
 `values-<environment>.yaml` for managed clusters. The staging and production
-ApplicationSets declare the Azure profile explicitly today; an AWS target must
-use a separate reviewed ApplicationSet or overlay. The chart code and the
+Applications declare the Azure profile explicitly today; an AWS target must
+use separate reviewed Applications or an overlay. The chart code and the
 environment values remain unchanged. Enable an AWS target only after an EKS cluster,
 the AWS Load Balancer Controller, an `aws-secrets-manager` ClusterSecretStore,
 private DNS, and the dependency endpoints have been prepared.

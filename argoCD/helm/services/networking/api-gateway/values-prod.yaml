@@ -1,0 +1,22 @@
+image:
+  tag: REPLACE_WITH_PROD_IMMUTABLE_TAG
+  requireDigest: true
+ingress:
+  host: api.spaceup.org
+  tlsSecretName: gateway-ingestor-prod-tls
+  controllerVerified: false
+certificate:
+  issuerName: letsencrypt-prod
+oidc:
+  enabled: true
+  applicationSecurityVerified: false
+  issuerUri: REPLACE_WITH_PROD_OIDC_ISSUER_URI
+  jwkSetUri: REPLACE_WITH_PROD_OIDC_JWKS_URI
+  audiences: [REPLACE_WITH_PROD_GATEWAY_AUDIENCE]
+  egressCidrs: [REPLACE_WITH_PROD_OIDC_ENDPOINT_CIDR]
+cors:
+  enabled: true
+  applicationSecurityVerified: false
+  allowedOrigins: [REPLACE_WITH_PROD_TRUSTED_WEB_ORIGIN]
+monitoring:
+  requiredForPromotion: true

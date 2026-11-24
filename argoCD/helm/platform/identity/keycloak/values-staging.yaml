@@ -1,0 +1,14 @@
+platform:
+  environment: staging
+
+externalSecrets:
+  enabled: true
+
+keycloak:
+  replicaCount: 2
+  pdb:
+    minAvailable: 1
+  ingress:
+    hostname: REPLACE_WITH_KEYCLOAK_STAGING_PUBLIC_HOSTNAME
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-staging

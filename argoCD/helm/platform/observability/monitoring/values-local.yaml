@@ -1,0 +1,6 @@
+secrets: { externalSecrets: { enabled: false } }
+observability: { platformAlerts: { enabled: false } }
+kube-prometheus-stack:
+  grafana: { enabled: false }
+  alertmanager: { alertmanagerSpec: { configSecret: "" } }
+  prometheus: { prometheusSpec: { retention: 24h, storageSpec: {} } }

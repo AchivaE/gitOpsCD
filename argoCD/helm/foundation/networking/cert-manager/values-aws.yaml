@@ -1,0 +1,2 @@
+certificateIssuers:
+  ingressClassName: alb

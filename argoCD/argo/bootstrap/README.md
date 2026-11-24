@@ -6,8 +6,13 @@ bootstrap au meme cluster.
 | Cible | Fichier a appliquer | Contenu deploye |
 | --- | --- | --- |
 | Docker Desktop, kind ou k3d | `argocd-bootstrap.yaml` | `dev` seulement, profil `local`, sans Azure Key Vault |
-| AKS staging | `argocd-bootstrap-azure-staging.yaml` | staging, add-ons et Azure Key Vault |
-| AKS production | `argocd-bootstrap-azure-prod.yaml` | production, add-ons et Azure Key Vault |
+| AKS staging | `argocd-bootstrap-azure-staging.yaml` | socle staging ; promotions manuelles |
+| AKS production | `argocd-bootstrap-azure-prod.yaml` | socle production ; promotions manuelles |
+
+Les bootstraps Azure ne synchronisent jamais automatiquement `main`. Avant une
+promotion, remplacer `spec.source.targetRevision` par le SHA Git complet ou le
+tag protégé revu, puis lancer une synchronisation manuelle. Le bootstrap local
+reste le seul profil qui suit automatiquement `main`.
 
 Ne placez jamais un PAT Git, mot de passe ou Secret Kubernetes dans ce depot.
 Si le depot Git est prive, creez avant le bootstrap un Secret `repository` dans
@@ -22,8 +27,11 @@ Sur un cluster local, appliquez uniquement :
 kubectl apply -n argocd -f argoCD/argo/bootstrap/argocd-bootstrap.yaml
 ```
 
-Sur AKS, renseignez d'abord les identifiants Azure et l'URL Key Vault dans
-`secrets/key-vault-secret-store.yaml`, puis creez le Secret Git initial. Une
-fois External Secrets Operator pret,
-`secrets/argocd-repository-secret.yaml` prend en charge la rotation du token
-depuis Key Vault.
+Sur AKS, Terraform doit d'abord fournir l'identite federée et les droits Key
+Vault. Renseignez ensuite uniquement ses identifiants publics et l'URL du
+coffre dans
+`foundation/security/external-secrets/azure/key-vault-secret-store.yaml`, puis
+creez le Secret Git initial. Une fois External Secrets Operator pret,
+`management/argocd/repository-access/repository-secret.yaml` prend en charge
+la rotation du token depuis Key Vault. Aucun secret ni identifiant sensible ne
+doit etre ajoute au depot.

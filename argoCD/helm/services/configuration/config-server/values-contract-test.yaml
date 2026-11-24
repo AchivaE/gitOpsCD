@@ -1,0 +1,18 @@
+image:
+  tag: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+  requireDigest: true
+configRepository:
+  uri: https://config.example.internal/platform-config.git
+  defaultLabel: "0123456789abcdef0123456789abcdef01234567"
+  requireImmutableRevision: true
+  egressCidrs: [10.10.10.10/32]
+consul:
+  host: consul.example.internal
+  port: 8501
+  scheme: https
+networkPolicy:
+  consulEgressCidrs: [10.10.10.11/32]
+monitoring:
+  serviceMonitorEnabled: true
+  applicationMetricsVerified: true
+  requiredForPromotion: true

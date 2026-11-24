@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: external-secrets-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+spec:
+  project: spaceup-cluster-addons
+  source:
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    path: argoCD/helm/foundation/security/external-secrets
+    targetRevision: main
+    helm:
+      releaseName: external-secrets
+      valueFiles: [values.yaml]
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: external-secrets
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - FailOnSharedResource=true

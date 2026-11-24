@@ -1,0 +1,33 @@
+image:
+  tag: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+  requireDigest: true
+ingress:
+  className: azure-application-gateway
+  host: api.staging.example.internal
+  tlsSecretName: gateway-tls
+  controllerVerified: true
+oidc:
+  enabled: true
+  applicationSecurityVerified: true
+  issuerUri: https://identity.example.internal/realms/spaceup
+  jwkSetUri: https://identity.example.internal/realms/spaceup/protocol/openid-connect/certs
+  audiences: [spaceup-gateway]
+  egressCidrs: [10.10.20.10/32]
+cors:
+  enabled: true
+  applicationSecurityVerified: true
+  allowedOrigins: [https://app.staging.example.internal]
+consul:
+  host: consul.example.internal
+  port: 8501
+  scheme: https
+vault:
+  uri: https://vault.example.internal
+networkPolicy:
+  consulEgressCidrs: [10.10.20.11/32]
+  vaultEgressCidrs: [10.10.20.12/32]
+  backendNamespaces: [spaceup-staging]
+monitoring:
+  serviceMonitorEnabled: true
+  applicationMetricsVerified: true
+  requiredForPromotion: true

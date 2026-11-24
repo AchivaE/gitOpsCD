@@ -1,0 +1,110 @@
+{{- $selector := .Values.policy.namespaceSelector }}
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: spaceup-require-workload-resources
+  annotations:
+    policies.kyverno.io/title: Require workload resources
+    policies.kyverno.io/category: SpaceUP baseline
+spec:
+  validationFailureAction: {{ .Values.policy.validationFailureAction }}
+  background: true
+  rules:
+    - name: require-cpu-memory-requests-and-limits
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector: {{- toYaml $selector | nindent 16 }}
+      validate:
+        message: CPU and memory requests and limits are required for every container.
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  requests:
+                    cpu: "?*"
+                    memory: "?*"
+                  limits:
+                    cpu: "?*"
+                    memory: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: spaceup-require-workload-probes
+  annotations:
+    policies.kyverno.io/title: Require workload probes
+    policies.kyverno.io/category: SpaceUP baseline
+spec:
+  validationFailureAction: {{ .Values.policy.validationFailureAction }}
+  background: true
+  rules:
+    - name: require-startup-readiness-and-liveness-probes
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector: {{- toYaml $selector | nindent 16 }}
+      validate:
+        message: Startup, readiness and liveness probes are required for every container.
+        pattern:
+          spec:
+            containers:
+              - startupProbe: "?*"
+                readinessProbe: "?*"
+                livenessProbe: "?*"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: spaceup-disallow-latest-image-tag
+  annotations:
+    policies.kyverno.io/title: Disallow mutable latest image tag
+    policies.kyverno.io/category: SpaceUP baseline
+spec:
+  validationFailureAction: {{ .Values.policy.validationFailureAction }}
+  background: true
+  rules:
+    - name: disallow-latest-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector: {{- toYaml $selector | nindent 16 }}
+      validate:
+        message: Mutable image tag latest is forbidden. Use a versioned tag or OCI digest.
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: spaceup-restrict-workload-privileges
+  annotations:
+    policies.kyverno.io/title: Restrict workload privileges
+    policies.kyverno.io/category: SpaceUP baseline
+spec:
+  validationFailureAction: {{ .Values.policy.validationFailureAction }}
+  background: true
+  rules:
+    - name: require-nonroot-and-no-privilege-escalation
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector: {{- toYaml $selector | nindent 16 }}
+      validate:
+        message: Workloads must run as non-root, drop ALL capabilities and disable privilege escalation.
+        pattern:
+          spec:
+            securityContext:
+              runAsNonRoot: true
+            containers:
+              - securityContext:
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop:
+                      - ALL

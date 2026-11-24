@@ -1,0 +1,3 @@
+# Azure-specific identity is intentionally not required. Kyverno validates
+# admission locally and does not need cloud credentials.
+{}

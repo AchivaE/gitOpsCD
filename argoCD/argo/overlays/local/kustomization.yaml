@@ -7,8 +7,11 @@ resources:
   - ../../projects/dev
   - ../../projects/cluster-addons
   - ../../projects/platform-runtime
-  - ../../config
-  - ../../applications/platform-local
-  - ../../applications/platform-consul-local
-  - ../../applications/services-dev
-  - ../../security
+  - ../../management/argocd/config
+  - ../../applications/foundation/security/policy-engine/local
+  - ../../applications/foundation/networking/cert-manager-local
+  - ../../applications/platform/observability/monitoring-local
+  - ../../applications/platform/runtime/consul-local
+  - ../../applications/services/configuration/config-server/local
+  - ../../applications/services/networking/api-gateway/local
+  - ../../management/argocd/rbac

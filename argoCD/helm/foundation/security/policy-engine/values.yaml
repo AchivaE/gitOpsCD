@@ -1,0 +1,24 @@
+# Policies select only namespaces explicitly opted into the SpaceUP baseline.
+# This avoids impacting Kubernetes, Argo CD and third-party system namespaces.
+policy:
+  validationFailureAction: Audit
+  namespaceSelector:
+    matchLabels:
+      platform.spaceup.io/policy-tier: baseline
+
+kyverno:
+  features:
+    policyReports:
+      enabled: true
+  admissionController:
+    serviceMonitor:
+      enabled: true
+  backgroundController:
+    serviceMonitor:
+      enabled: true
+  cleanupController:
+    serviceMonitor:
+      enabled: true
+  reportsController:
+    serviceMonitor:
+      enabled: true

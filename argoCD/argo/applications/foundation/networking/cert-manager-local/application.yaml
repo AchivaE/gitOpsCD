@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: foundation-cert-manager-local
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+    # Do not run a second controller before cluster-addons-local was deleted
+    # with --cascade=orphan during the controlled ownership migration.
+    platform.spaceup.io/migration-mode: manual-sync-required
+spec:
+  project: spaceup-cluster-addons
+  source: { repoURL: https://github.com/AchivaE/gitOpsCD.git, targetRevision: main, path: argoCD/helm/foundation/networking/cert-manager, helm: { valueFiles: [values.yaml, values-local.yaml], version: v3 } }
+  destination: { server: https://kubernetes.default.svc, namespace: platform-system }
+  syncPolicy:
+    # Re-enable automated prune/self-heal only in the post-migration commit.
+    syncOptions: [CreateNamespace=true, PrunePropagationPolicy=foreground, ServerSideApply=true, SkipDryRunOnMissingResource=true, FailOnSharedResource=true]

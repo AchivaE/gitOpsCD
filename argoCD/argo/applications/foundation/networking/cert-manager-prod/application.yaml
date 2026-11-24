@@ -1,0 +1,9 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: { name: foundation-cert-manager-prod, namespace: argocd, annotations: { argocd.argoproj.io/sync-wave: "-20" } }
+spec:
+  project: spaceup-cluster-addons
+  source: { repoURL: https://github.com/AchivaE/gitOpsCD.git, targetRevision: main, path: argoCD/helm/foundation/networking/cert-manager, helm: { valueFiles: [values.yaml, values-azure.yaml, values-prod.yaml], version: v3 } }
+  destination: { server: https://kubernetes.default.svc, namespace: platform-system }
+  # Promotion is manual until targetRevision is a reviewed immutable Git SHA or tag.
+  syncPolicy: { syncOptions: [CreateNamespace=true, PrunePropagationPolicy=foreground, ServerSideApply=true, FailOnSharedResource=true] }

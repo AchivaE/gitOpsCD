@@ -1,0 +1,10 @@
+apiVersion: v2
+name: policy-engine
+description: Kyverno-based admission policy foundation module.
+type: application
+version: 0.1.0
+appVersion: "1.20.0"
+dependencies:
+  - name: kyverno
+    version: "3.10.0"
+    repository: file://charts

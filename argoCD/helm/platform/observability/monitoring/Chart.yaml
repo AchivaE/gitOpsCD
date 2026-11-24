@@ -1,0 +1,10 @@
+apiVersion: v2
+name: monitoring
+description: Dedicated Prometheus, Alertmanager and Grafana observability plane.
+type: application
+version: 0.1.0
+appVersion: "68.4.0"
+dependencies:
+  - name: kube-prometheus-stack
+    version: "68.4.0"
+    repository: file://charts

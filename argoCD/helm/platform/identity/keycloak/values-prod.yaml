@@ -1,0 +1,12 @@
+platform:
+  environment: prod
+
+externalSecrets:
+  enabled: true
+
+keycloak:
+  replicaCount: 3
+  pdb:
+    minAvailable: 2
+  ingress:
+    hostname: REPLACE_WITH_KEYCLOAK_PROD_PUBLIC_HOSTNAME

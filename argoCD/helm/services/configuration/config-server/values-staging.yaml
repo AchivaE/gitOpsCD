@@ -1,0 +1,8 @@
+image:
+  tag: REPLACE_WITH_STAGING_IMMUTABLE_TAG
+configRepository:
+  uri: REPLACE_WITH_PRIVATE_CONFIG_REPOSITORY_URL
+  defaultLabel: REPLACE_WITH_REVIEWED_CONFIG_GIT_SHA_OR_TAG
+  requireImmutableRevision: true
+monitoring:
+  requiredForPromotion: true

@@ -1,0 +1,1 @@
+certificateIssuers: { ingressClassName: azure-application-gateway }

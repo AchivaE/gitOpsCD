@@ -1,0 +1,14 @@
+# Production starts in audit mode. Enforcement is an explicit, reviewed
+# promotion after zero unexpected violations and a rollback exercise.
+policy:
+  validationFailureAction: Audit
+
+kyverno:
+  admissionController:
+    replicas: 3
+  backgroundController:
+    replicas: 2
+  cleanupController:
+    replicas: 2
+  reportsController:
+    replicas: 2

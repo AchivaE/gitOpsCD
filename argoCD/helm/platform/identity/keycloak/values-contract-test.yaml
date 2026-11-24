@@ -1,0 +1,17 @@
+# Render-only values. Never referenced by an Argo Application.
+platform:
+  environment: staging
+externalSecrets:
+  enabled: true
+  adminPasswordRemoteKey: keycloak-admin-password
+  dbHostRemoteKey: keycloak-db-host
+  dbPortRemoteKey: keycloak-db-port
+  dbUserRemoteKey: keycloak-db-user
+  dbNameRemoteKey: keycloak-db-name
+  dbPasswordRemoteKey: keycloak-db-password
+  tlsCertRemoteKey: keycloak-tls-crt
+  tlsKeyRemoteKey: keycloak-tls-key
+  dbCaRemoteKey: keycloak-db-ca
+keycloak:
+  ingress:
+    hostname: keycloak.staging.example.invalid

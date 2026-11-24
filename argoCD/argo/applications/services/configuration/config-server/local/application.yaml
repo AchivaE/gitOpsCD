@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-config-ingestor
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "-10" }
+spec:
+  project: spaceup-platform-dev
+  source:
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    targetRevision: main
+    path: argoCD/helm/services/configuration/config-server
+    helm: { valueFiles: [values.yaml, values-dev.yaml, values-local.yaml], version: v3 }
+  destination: { server: https://kubernetes.default.svc, namespace: spaceup-dev }
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [PrunePropagationPolicy=foreground, RespectIgnoreDifferences=true, ServerSideApply=true, SkipSchemaValidation=false]

@@ -1,0 +1,10 @@
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: gp3
+  grafana:
+    persistence:
+      storageClassName: gp3

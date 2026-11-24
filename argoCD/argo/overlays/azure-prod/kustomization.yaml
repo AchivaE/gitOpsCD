@@ -7,8 +7,6 @@ resources:
   - ../../projects/prod
   - ../../projects/cluster-addons
   - ../../projects/platform-runtime
-  - ../../config
-  - ../../secrets
-  - ../../applications/platform-prod
-  - ../../applications/services-prod
-  - ../../security
+  - ../../projects/identity
+  - ../../management/argocd/config
+  - ../../management/argocd/rbac

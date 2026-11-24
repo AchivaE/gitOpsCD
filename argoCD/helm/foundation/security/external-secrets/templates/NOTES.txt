@@ -1,0 +1,3 @@
+External Secrets Operator is installed as a dedicated Foundation release.
+Secret stores and ExternalSecret resources are managed by their environment
+overlays after this release reports healthy.

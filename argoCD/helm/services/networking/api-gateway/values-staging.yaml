@@ -1,0 +1,18 @@
+image: { tag: REPLACE_WITH_STAGING_IMMUTABLE_TAG }
+ingress:
+  host: api.staging.spaceup.org
+  tlsSecretName: gateway-ingestor-staging-tls
+  controllerVerified: false
+oidc:
+  enabled: true
+  applicationSecurityVerified: false
+  issuerUri: REPLACE_WITH_STAGING_OIDC_ISSUER_URI
+  jwkSetUri: REPLACE_WITH_STAGING_OIDC_JWKS_URI
+  audiences: [REPLACE_WITH_STAGING_GATEWAY_AUDIENCE]
+  egressCidrs: [REPLACE_WITH_STAGING_OIDC_ENDPOINT_CIDR]
+cors:
+  enabled: true
+  applicationSecurityVerified: false
+  allowedOrigins: [REPLACE_WITH_STAGING_TRUSTED_WEB_ORIGIN]
+monitoring:
+  requiredForPromotion: true

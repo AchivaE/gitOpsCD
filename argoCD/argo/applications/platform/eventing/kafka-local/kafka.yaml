@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-kafka-local
+  namespace: argocd
+  annotations:
+    # Kafka is independent of Consul but must exist before a future consumer.
+    argocd.argoproj.io/sync-wave: "-14"
+spec:
+  project: spaceup-platform-runtime
+  source:
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    targetRevision: main
+    path: argoCD/helm/platform/eventing/kafka
+    helm:
+      valueFiles: [values.yaml, values-local.yaml]
+      version: v3
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-runtime
+  # This Application is intentionally not referenced by overlays/local. Apply
+  # it only after the capacity and recovery gates in KAFKA-EVENT-PLANE.md.
+  syncPolicy:
+    syncOptions:
+      - PrunePropagationPolicy=foreground
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true

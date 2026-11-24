@@ -55,14 +55,21 @@ reuse the Consul bootstrap or management token.
 ## Vault contract
 
 `gateway-ingestor` also requires an existing, HA Vault service on a private
-HTTPS endpoint. A Vault server is not provisioned by this repository yet, so
-this is a hard production prerequisite, not an optional feature.
+HTTPS endpoint. Vault is deliberately external to the Kubernetes workload
+cluster for staging and production; it is a security control plane and is not
+provisioned by a Helm chart in this repository. This is a hard production
+prerequisite, not an optional feature.
 
 Before promotion, the Vault operator must configure the Kubernetes auth mount
 (`kubernetes` by default) and a `gateway-ingestor` role bound only to the
 `gateway-ingestor` ServiceAccount in the target namespace. The role must be
 read-only and limited to the KV paths `achiva/shared` and
 `achiva/gateway-ingestor`. It must not grant policy or token administration.
+
+The Vault platform team must provide HA storage, auto-unseal with the cloud
+KMS/HSM, end-to-end TLS, protected audit logs and a tested backup/recovery
+procedure. The initial root token is bootstrap-only and is never supplied to a
+workload.
 
 Key Vault must contain `gateway-ingestor-vault-truststore-p12` (Base64 PKCS12)
 and `gateway-ingestor-vault-truststore-password`. The gateway uses Kubernetes
@@ -83,10 +90,33 @@ The charts always create a Kubernetes availability alert, which relies on
 do **not** create a `ServiceMonitor` by default: the current service POM files
 do not include `micrometer-registry-prometheus`, so `/actuator/prometheus`
 would return no usable metrics. Add that dependency and expose the endpoint in
-both applications, then set `monitoring.serviceMonitorEnabled: true` in the
-relevant environment values. The charts also override actuator exposure to
+both applications, then set both `monitoring.serviceMonitorEnabled: true` and
+`monitoring.applicationMetricsVerified: true` in the relevant environment
+values. Staging and production reject rendering until this evidence exists.
+The charts also override actuator exposure to
 `health,info` and hide health details, preventing the current `env` and verbose
 health data from being exposed in production.
+
+## Gateway OIDC and CORS prerequisite
+
+The Gateway deployment contract uses Spring Boot Resource Server properties for
+issuer URI, JWKS URI and JWT audiences. The gateway source must add
+`spring-boot-starter-oauth2-resource-server` (and its JWT support), then prove
+that unsigned, expired, wrong-issuer and wrong-audience tokens are rejected.
+No client secret is needed for JWT validation.
+
+CORS stays application behavior. The configuration repository must replace the
+current wildcard credentialed policy with the exact HTTPS origins carried by
+`cors.allowedOrigins`; wildcard origins and wildcard origin patterns are
+forbidden. Before setting `cors.applicationSecurityVerified: true`, prove that
+requests from any unlisted Origin are rejected and that every intentionally
+public route is documented in `oidc.publicPaths`.
+
+The selected Foundation Ingress controller must expose the exact IngressClass
+from `ingress.className` before setting `ingress.controllerVerified: true`.
+For Azure this is the Application Gateway controller/add-on; for AWS it is the
+AWS Load Balancer Controller. Both are provider infrastructure and need their
+own workload identity, private network and upgrade lifecycle.
 
 ## Legacy Consul Terraform module
 

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: platform-keycloak
+description: Dedicated Keycloak identity-plane module with external HA PostgreSQL.
+type: application
+version: 0.1.0
+appVersion: "26"
+dependencies:
+  - name: keycloak
+    version: "24.4.6"
+    repository: "file://charts"

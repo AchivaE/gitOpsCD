@@ -26,6 +26,8 @@ spec:
       kind: Service
     - group: ""
       kind: ServiceAccount
+    - group: ""
+      kind: PersistentVolumeClaim
     - group: apps
       kind: DaemonSet
     - group: apps
@@ -40,5 +42,7 @@ spec:
       kind: RoleBinding
     - group: policy
       kind: PodDisruptionBudget
+    - group: networking.k8s.io
+      kind: NetworkPolicy
   orphanedResources:
     warn: true

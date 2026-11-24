@@ -7,8 +7,6 @@ resources:
   - ../../projects/staging
   - ../../projects/cluster-addons
   - ../../projects/platform-runtime
-  - ../../config
-  - ../../secrets
-  - ../../applications/platform-staging
-  - ../../applications/services-staging
-  - ../../security
+  - ../../projects/identity
+  - ../../management/argocd/config
+  - ../../management/argocd/rbac

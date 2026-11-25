@@ -1,4 +1,10 @@
 kyverno:
+  # The four SpaceUP legacy ClusterPolicies have been replaced by the CEL
+  # ValidatingPolicy resources in this chart. Acknowledge that the retired
+  # resources are deliberately non-enforcing so the Kyverno upgrade hook does
+  # not block Argo CD from applying the replacements and pruning the legacy API.
+  upgrade:
+    acknowledgeLegacyPoliciesNotEnforced: true
   admissionController:
     replicas: 1
   backgroundController:

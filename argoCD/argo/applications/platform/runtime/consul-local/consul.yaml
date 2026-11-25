@@ -7,6 +7,42 @@ metadata:
     argocd.argoproj.io/sync-wave: "-15"
 spec:
   project: spaceup-platform-runtime
+  # The Consul dependency creates these named RBAC helpers only while it
+  # initializes TLS and gossip encryption. They are neither runtime workloads
+  # nor data and must not make the release appear degraded after success.
+  orphanedResources:
+    ignore:
+      - group: ""
+        kind: ServiceAccount
+        name: consul-gossip-encryption-autogenerate
+      - group: ""
+        kind: ServiceAccount
+        name: consul-tls-init
+      - group: rbac.authorization.k8s.io
+        kind: Role
+        name: consul-gossip-encryption-autogenerate
+      - group: rbac.authorization.k8s.io
+        kind: Role
+        name: consul-tls-init
+      - group: rbac.authorization.k8s.io
+        kind: RoleBinding
+        name: consul-gossip-encryption-autogenerate
+      - group: rbac.authorization.k8s.io
+        kind: RoleBinding
+        name: consul-tls-init
+  ignoreDifferences:
+    # Kubernetes defaults these fields although the Consul chart intentionally
+    # omits them. They do not alter the desired server or its PVC contents.
+    - group: apps
+      kind: StatefulSet
+      name: consul-server
+      namespace: platform-runtime
+      jqPathExpressions:
+        - .spec.persistentVolumeClaimRetentionPolicy
+        - .spec.volumeClaimTemplates[]?.apiVersion
+        - .spec.template.spec.containers[]?.env[]?.valueFrom.fieldRef.apiVersion
+        - .spec.template.spec.initContainers[]?.env[]?.valueFrom.fieldRef.apiVersion
+        - .spec.template.spec.containers[]?.volumeMounts[]? | select(.mountPath == "/tmp").readOnly
   source:
     repoURL: https://github.com/AchivaE/gitOpsCD.git
     targetRevision: main

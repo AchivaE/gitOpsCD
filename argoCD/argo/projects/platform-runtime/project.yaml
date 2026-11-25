@@ -46,3 +46,25 @@ spec:
       kind: NetworkPolicy
   orphanedResources:
     warn: true
+    # The Consul chart creates these named RBAC helpers only while generating
+    # TLS and gossip-encryption material. They are safe to retain and do not
+    # represent a workload or persistent runtime state.
+    ignore:
+      - group: ""
+        kind: ServiceAccount
+        name: consul-gossip-encryption-autogenerate
+      - group: ""
+        kind: ServiceAccount
+        name: consul-tls-init
+      - group: rbac.authorization.k8s.io
+        kind: Role
+        name: consul-gossip-encryption-autogenerate
+      - group: rbac.authorization.k8s.io
+        kind: Role
+        name: consul-tls-init
+      - group: rbac.authorization.k8s.io
+        kind: RoleBinding
+        name: consul-gossip-encryption-autogenerate
+      - group: rbac.authorization.k8s.io
+        kind: RoleBinding
+        name: consul-tls-init

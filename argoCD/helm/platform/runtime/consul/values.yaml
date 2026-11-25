@@ -18,6 +18,11 @@ global:
     httpsOnly: true
   acls:
     manageSystemACLs: true
+  # Use the chart's explicit Argo CD lifecycle for ACL initialization. This
+  # prevents an initialization Job from being treated as a long-lived release
+  # resource by GitOps reconciliation.
+  argocd:
+    enabled: true
   gossipEncryption:
     autoGenerate: true
   metrics:

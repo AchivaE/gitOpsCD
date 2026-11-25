@@ -1,110 +1,139 @@
 {{- $selector := .Values.policy.namespaceSelector }}
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+{{- $action := .Values.policy.validationAction }}
+# Kyverno 1.20 no longer enforces the legacy kyverno.io/v1 ClusterPolicy API.
+# These policies use the supported CEL-based policies.kyverno.io/v1 API.
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
 metadata:
   name: spaceup-require-workload-resources
   annotations:
     policies.kyverno.io/title: Require workload resources
     policies.kyverno.io/category: SpaceUP baseline
 spec:
-  validationFailureAction: {{ .Values.policy.validationFailureAction }}
-  background: true
-  rules:
-    - name: require-cpu-memory-requests-and-limits
-      match:
-        any:
-          - resources:
-              kinds: [Pod]
-              namespaceSelector: {{- toYaml $selector | nindent 16 }}
-      validate:
-        message: CPU and memory requests and limits are required for every container.
-        pattern:
-          spec:
-            containers:
-              - resources:
-                  requests:
-                    cpu: "?*"
-                    memory: "?*"
-                  limits:
-                    cpu: "?*"
-                    memory: "?*"
+  failurePolicy: Fail
+  validationActions:
+    - {{ $action }}
+  evaluation:
+    admission:
+      enabled: true
+    background:
+      enabled: true
+  matchConstraints:
+    namespaceSelector: {{- toYaml $selector | nindent 6 }}
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  validations:
+    - expression: >-
+        object.spec.containers.all(container,
+          has(container.resources) &&
+          has(container.resources.requests) &&
+          has(container.resources.requests.cpu) &&
+          has(container.resources.requests.memory) &&
+          has(container.resources.limits) &&
+          has(container.resources.limits.cpu) &&
+          has(container.resources.limits.memory)
+        )
+      message: CPU and memory requests and limits are required for every container.
 ---
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
 metadata:
   name: spaceup-require-workload-probes
   annotations:
     policies.kyverno.io/title: Require workload probes
     policies.kyverno.io/category: SpaceUP baseline
 spec:
-  validationFailureAction: {{ .Values.policy.validationFailureAction }}
-  background: true
-  rules:
-    - name: require-startup-readiness-and-liveness-probes
-      match:
-        any:
-          - resources:
-              kinds: [Pod]
-              namespaceSelector: {{- toYaml $selector | nindent 16 }}
-      validate:
-        message: Startup, readiness and liveness probes are required for every container.
-        pattern:
-          spec:
-            containers:
-              - startupProbe: "?*"
-                readinessProbe: "?*"
-                livenessProbe: "?*"
+  failurePolicy: Fail
+  validationActions:
+    - {{ $action }}
+  evaluation:
+    admission:
+      enabled: true
+    background:
+      enabled: true
+  matchConstraints:
+    namespaceSelector: {{- toYaml $selector | nindent 6 }}
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  validations:
+    - expression: >-
+        object.spec.containers.all(container,
+          has(container.startupProbe) &&
+          has(container.readinessProbe) &&
+          has(container.livenessProbe)
+        )
+      message: Startup, readiness and liveness probes are required for every container.
 ---
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
 metadata:
   name: spaceup-disallow-latest-image-tag
   annotations:
     policies.kyverno.io/title: Disallow mutable latest image tag
     policies.kyverno.io/category: SpaceUP baseline
 spec:
-  validationFailureAction: {{ .Values.policy.validationFailureAction }}
-  background: true
-  rules:
-    - name: disallow-latest-tag
-      match:
-        any:
-          - resources:
-              kinds: [Pod]
-              namespaceSelector: {{- toYaml $selector | nindent 16 }}
-      validate:
-        message: Mutable image tag latest is forbidden. Use a versioned tag or OCI digest.
-        pattern:
-          spec:
-            containers:
-              - image: "!*:latest"
+  failurePolicy: Fail
+  validationActions:
+    - {{ $action }}
+  evaluation:
+    admission:
+      enabled: true
+    background:
+      enabled: true
+  matchConstraints:
+    namespaceSelector: {{- toYaml $selector | nindent 6 }}
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  validations:
+    - expression: >-
+        object.spec.containers.all(container, !container.image.endsWith(':latest'))
+      message: Mutable image tag latest is forbidden. Use a versioned tag or OCI digest.
 ---
-apiVersion: kyverno.io/v1
-kind: ClusterPolicy
+apiVersion: policies.kyverno.io/v1
+kind: ValidatingPolicy
 metadata:
   name: spaceup-restrict-workload-privileges
   annotations:
     policies.kyverno.io/title: Restrict workload privileges
     policies.kyverno.io/category: SpaceUP baseline
 spec:
-  validationFailureAction: {{ .Values.policy.validationFailureAction }}
-  background: true
-  rules:
-    - name: require-nonroot-and-no-privilege-escalation
-      match:
-        any:
-          - resources:
-              kinds: [Pod]
-              namespaceSelector: {{- toYaml $selector | nindent 16 }}
-      validate:
-        message: Workloads must run as non-root, drop ALL capabilities and disable privilege escalation.
-        pattern:
-          spec:
-            securityContext:
-              runAsNonRoot: true
-            containers:
-              - securityContext:
-                  allowPrivilegeEscalation: false
-                  capabilities:
-                    drop:
-                      - ALL
+  failurePolicy: Fail
+  validationActions:
+    - {{ $action }}
+  evaluation:
+    admission:
+      enabled: true
+    background:
+      enabled: true
+  matchConstraints:
+    namespaceSelector: {{- toYaml $selector | nindent 6 }}
+    resourceRules:
+      - apiGroups: [""]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["pods"]
+  validations:
+    - expression: >-
+        has(object.spec.securityContext) &&
+        has(object.spec.securityContext.runAsNonRoot) &&
+        object.spec.securityContext.runAsNonRoot == true
+      message: Workloads must set pod securityContext.runAsNonRoot to true.
+    - expression: >-
+        object.spec.containers.all(container,
+          has(container.securityContext) &&
+          has(container.securityContext.allowPrivilegeEscalation) &&
+          container.securityContext.allowPrivilegeEscalation == false &&
+          has(container.securityContext.capabilities) &&
+          has(container.securityContext.capabilities.drop) &&
+          container.securityContext.capabilities.drop.exists(capability, capability == 'ALL')
+        )
+      message: Every container must disable privilege escalation and drop ALL Linux capabilities.

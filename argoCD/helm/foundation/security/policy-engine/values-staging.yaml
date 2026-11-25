@@ -1,7 +1,7 @@
 # Staging starts in audit mode. Promote individual policies only after policy
 # reports are reviewed and the deployment contract is satisfied.
 policy:
-  validationFailureAction: Audit
+  validationAction: Audit
 
 kyverno:
   admissionController:

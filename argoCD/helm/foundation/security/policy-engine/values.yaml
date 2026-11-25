@@ -1,7 +1,8 @@
 # Policies select only namespaces explicitly opted into the SpaceUP baseline.
 # This avoids impacting Kubernetes, Argo CD and third-party system namespaces.
 policy:
-  validationFailureAction: Audit
+  # Supported Kyverno CEL actions: Audit, Warn, Deny.
+  validationAction: Audit
   namespaceSelector:
     matchLabels:
       platform.spaceup.io/policy-tier: baseline

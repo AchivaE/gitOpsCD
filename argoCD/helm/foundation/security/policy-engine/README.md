@@ -20,7 +20,7 @@ mesurer les ecarts avant toute interruption de service.
 1. Consulter les rapports sur au moins un cycle de deploiement et corriger les
    violations attendues.
 2. Tester la politique et son rollback sur le cluster local.
-3. Passer une seule politique a `Enforce` dans une revue distincte, d'abord en
+3. Passer une seule politique a `Deny` dans une revue distincte, d'abord en
    staging, avec une revision Git immuable.
 4. Conserver le rollback : revenir a `Audit` dans la revision precedente.
 

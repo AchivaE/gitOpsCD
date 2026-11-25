@@ -34,6 +34,10 @@ spec:
       kind: ClusterIssuer
     - group: kyverno.io
       kind: ClusterPolicy
+    # Kyverno 1.20 policies use the supported CEL API. ClusterPolicy remains
+    # listed temporarily so Argo CD can prune the retired legacy resources.
+    - group: policies.kyverno.io
+      kind: ValidatingPolicy
     - group: rbac.authorization.k8s.io
       kind: ClusterRole
     - group: rbac.authorization.k8s.io

@@ -18,11 +18,6 @@ global:
     httpsOnly: true
   acls:
     manageSystemACLs: true
-  # Use the chart's explicit Argo CD lifecycle for ACL initialization. This
-  # prevents an initialization Job from being treated as a long-lived release
-  # resource by GitOps reconciliation.
-  argocd:
-    enabled: true
   gossipEncryption:
     autoGenerate: true
   metrics:
@@ -39,6 +34,12 @@ consul:
     storage: 20Gi
     # null deliberately selects the target cluster's default StorageClass.
     storageClass: null
+    # Declare the Kubernetes default explicitly. This prevents Argo CD from
+    # detecting an avoidable StatefulSet drift and protects Consul data during
+    # a scale-down or a controlled release replacement.
+    persistentVolumeClaimRetentionPolicy:
+      whenDeleted: Retain
+      whenScaled: Retain
     resources:
       requests:
         cpu: 250m

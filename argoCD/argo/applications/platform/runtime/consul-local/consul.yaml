@@ -15,10 +15,31 @@ spec:
       name: consul-server
       namespace: platform-runtime
       jqPathExpressions:
+        # Kubernetes v1.32 injects the following StatefulSet defaults while
+        # the upstream Consul 1.5.1 chart deliberately omits them. Each path
+        # is a Kubernetes-owned default only; Consul's configuration, image,
+        # probes, resources, labels, secrets and PVC capacity remain tracked.
         - .spec.persistentVolumeClaimRetentionPolicy
+        - .spec.revisionHistoryLimit
+        - .spec.updateStrategy
         - .spec.volumeClaimTemplates[]?.apiVersion
+        - .spec.volumeClaimTemplates[]?.metadata.creationTimestamp
+        - .spec.volumeClaimTemplates[]?.spec.volumeMode
+        - .spec.volumeClaimTemplates[]?.status
+        - .spec.template.spec.dnsPolicy
+        - .spec.template.spec.restartPolicy
+        - .spec.template.spec.schedulerName
+        - .spec.template.spec.serviceAccount
+        - .spec.template.spec.volumes[]?.configMap.defaultMode
+        - .spec.template.spec.volumes[]?.secret.defaultMode
         - .spec.template.spec.containers[]?.env[]?.valueFrom.fieldRef.apiVersion
+        - .spec.template.spec.containers[]?.ports[]? | select(.name == "https" or .name == "server").protocol
+        - .spec.template.spec.containers[]?.terminationMessagePath
+        - .spec.template.spec.containers[]?.terminationMessagePolicy
         - .spec.template.spec.initContainers[]?.env[]?.valueFrom.fieldRef.apiVersion
+        - .spec.template.spec.initContainers[]?.resources
+        - .spec.template.spec.initContainers[]?.terminationMessagePath
+        - .spec.template.spec.initContainers[]?.terminationMessagePolicy
         - .spec.template.spec.containers[]?.volumeMounts[]? | select(.mountPath == "/tmp").readOnly
   source:
     repoURL: https://github.com/AchivaE/gitOpsCD.git

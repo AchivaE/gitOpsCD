@@ -47,8 +47,10 @@ spec:
   orphanedResources:
     warn: true
     # The Consul chart creates these named RBAC helpers only while generating
-    # TLS and gossip-encryption material. They are safe to retain and do not
-    # represent a workload or persistent runtime state.
+    # TLS, gossip-encryption and bootstrap-ACL material. The helper RBAC
+    # objects and the five resulting secrets are intentionally retained: they
+    # are the identity and encryption state of this Consul installation, not
+    # unmanaged application workloads.
     ignore:
       - group: ""
         kind: ServiceAccount
@@ -68,3 +70,18 @@ spec:
       - group: rbac.authorization.k8s.io
         kind: RoleBinding
         name: consul-tls-init
+      - group: ""
+        kind: Secret
+        name: consul-bootstrap-acl-token
+      - group: ""
+        kind: Secret
+        name: consul-ca-cert
+      - group: ""
+        kind: Secret
+        name: consul-ca-key
+      - group: ""
+        kind: Secret
+        name: consul-gossip-encryption-key
+      - group: ""
+        kind: Secret
+        name: consul-server-cert

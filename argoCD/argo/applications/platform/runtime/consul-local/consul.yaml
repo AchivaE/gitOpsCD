@@ -23,6 +23,7 @@ spec:
         - .spec.revisionHistoryLimit
         - .spec.updateStrategy
         - .spec.volumeClaimTemplates[]?.apiVersion
+        - .spec.volumeClaimTemplates[]?.kind
         - .spec.volumeClaimTemplates[]?.metadata.creationTimestamp
         - .spec.volumeClaimTemplates[]?.spec.volumeMode
         - .spec.volumeClaimTemplates[]?.status
@@ -30,6 +31,7 @@ spec:
         - .spec.template.spec.restartPolicy
         - .spec.template.spec.schedulerName
         - .spec.template.spec.serviceAccount
+        - .spec.template.metadata.creationTimestamp
         - .spec.template.spec.volumes[]?.configMap.defaultMode
         - .spec.template.spec.volumes[]?.secret.defaultMode
         - .spec.template.spec.containers[]?.env[]?.valueFrom.fieldRef.apiVersion

@@ -6,12 +6,14 @@ resources:
   - ../../namespaces/local
   - ../../projects/dev
   - ../../projects/cluster-addons
+  - ../../projects/identity
   - ../../projects/platform-runtime
   - ../../management/argocd/config
   - ../../applications/foundation/security/policy-engine/local
   - ../../applications/foundation/networking/cert-manager-local
   - ../../applications/platform/observability/monitoring-local
   - ../../applications/platform/runtime/consul-local
+  - ../../applications/platform/identity/keycloak-local
   - ../../applications/services/configuration/config-server/local
   - ../../applications/services/networking/api-gateway/local
   - ../../management/argocd/rbac

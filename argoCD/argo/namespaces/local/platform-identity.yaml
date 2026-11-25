@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: platform-identity
+  labels:
+    app.kubernetes.io/part-of: spaceup-platform
+    platform.spaceup.io/layer: identity
+    environment: local
+    platform.spaceup.io/policy-tier: baseline
+  annotations:
+    argocd.argoproj.io/sync-wave: "-35"

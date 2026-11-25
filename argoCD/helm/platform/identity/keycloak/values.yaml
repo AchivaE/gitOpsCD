@@ -55,6 +55,10 @@ keycloak:
   extraEnvVars:
     - name: KC_DB_URL_PROPERTIES
       value: sslmode=verify-full
+    # With proxyHeaders enabled, chart version 24.4.6 does not infer the
+    # external Keycloak hostname. This is the canonical OIDC issuer origin.
+    - name: KC_HOSTNAME
+      value: "https://{{ .Values.ingress.hostname }}"
   customCaExistingSecret: keycloak-db-ca
   postgresql:
     enabled: false

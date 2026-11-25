@@ -15,7 +15,8 @@ control plane.
    account, delivered with External Secrets.
 3. A public identity hostname through the approved WAF/load balancer, TLS
    certificate and strict hostname configuration. The management endpoint must
-   remain private.
+   remain private. This hostname is also rendered as `KC_HOSTNAME`, so the
+   Keycloak OIDC issuer always uses the public HTTPS origin.
 4. Three Keycloak replicas in production across availability zones, with
    anti-affinity, topology spread and a PodDisruptionBudget. Staging may use
    two replicas only when its availability objective permits it.
@@ -26,6 +27,11 @@ control plane.
 
 The module is activated by adding its dedicated Application to the selected
 environment overlay only after these preconditions are evidenced.
+
+External Secrets are synchronized in Argo CD wave `-1`; the Keycloak release
+is applied afterwards. A healthy `ExternalSecret` must materialize each target
+Secret before Keycloak can become ready. This ordering does not replace the
+activation evidence above: it only makes the dependency explicit.
 
 The full database and restore contract is in
 [`../../../../runbooks/POSTGRESQL-KEYCLOAK.md`](../../../../runbooks/POSTGRESQL-KEYCLOAK.md).

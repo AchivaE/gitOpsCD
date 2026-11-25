@@ -1,0 +1,51 @@
+# Isolated developer profile. It is intentionally not production-shaped:
+# one replica, an in-cluster PostgreSQL dependency and no public ingress.
+platform:
+  environment: local
+
+externalSecrets:
+  enabled: false
+
+keycloak:
+  production: false
+  replicaCount: 1
+  podAntiAffinityPreset: ""
+  topologySpreadConstraints: []
+  pdb:
+    create: false
+  tls:
+    enabled: false
+    existingSecret: ""
+  customCaExistingSecret: ""
+  service:
+    http:
+      enabled: true
+  ingress:
+    enabled: false
+  networkPolicy:
+    enabled: false
+  extraEnvVars: []
+  auth:
+    existingSecret: keycloak-local-admin
+    passwordSecretKey: admin-password
+  postgresql:
+    enabled: true
+    auth:
+      username: keycloak
+      database: keycloak
+      existingSecret: keycloak-local-db
+      secretKeys:
+        userPasswordKey: password
+    primary:
+      persistence:
+        enabled: true
+        size: 2Gi
+  # Clear the production external-database contract. The local Keycloak
+  # instance must resolve its database through the bundled PostgreSQL service.
+  externalDatabase:
+    existingSecret: ""
+    existingSecretHostKey: ""
+    existingSecretPortKey: ""
+    existingSecretUserKey: ""
+    existingSecretDatabaseKey: ""
+    existingSecretPasswordKey: ""

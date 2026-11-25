@@ -36,7 +36,13 @@ try {
     if ([string]::IsNullOrWhiteSpace($adminPlainText)) { throw 'The Keycloak admin password cannot be empty.' }
 
     $passwordBytes = New-Object byte[] 32
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($passwordBytes)
+    $randomGenerator = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try {
+        $randomGenerator.GetBytes($passwordBytes)
+    }
+    finally {
+        $randomGenerator.Dispose()
+    }
     $databasePassword = [Convert]::ToBase64String($passwordBytes)
 
     New-LocalSecret -Name 'keycloak-local-admin' -Values @{ 'admin-password' = $adminPlainText }

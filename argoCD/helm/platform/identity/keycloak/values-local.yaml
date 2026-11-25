@@ -3,10 +3,22 @@
 platform:
   environment: local
 
+# Required by the Bitnami chart when using its documented Legacy registry.
+# Never set this in staging or production.
+global:
+  security:
+    allowInsecureImages: true
+
 externalSecrets:
   enabled: false
 
 keycloak:
+  # The pinned chart refers to Bitnami tags moved out of the public catalog.
+  # Legacy images are permitted only for this disposable local profile.
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/keycloak
+    tag: 26.1.0-debian-12-r0
   production: false
   replicaCount: 1
   podAntiAffinityPreset: ""
@@ -30,6 +42,10 @@ keycloak:
     passwordSecretKey: admin-password
   postgresql:
     enabled: true
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/postgresql
+      tag: 17.2.0-debian-12-r6
     auth:
       username: keycloak
       database: keycloak

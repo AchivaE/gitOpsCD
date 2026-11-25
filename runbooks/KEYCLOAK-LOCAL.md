@@ -4,6 +4,10 @@ The local Keycloak profile is isolated from staging and production: one
 Keycloak replica, a persistent in-cluster PostgreSQL database and no public
 Ingress. Credentials are never stored in Git.
 
+The vendored Keycloak chart uses image versions that Bitnami moved to its
+Legacy registry. This exception is confined to local development. Staging and
+production must use a reviewed, maintained image supply chain before activation.
+
 After Argo CD has synchronized `argocd-bootstrap-local`, create local-only
 credentials in Minikube:
 

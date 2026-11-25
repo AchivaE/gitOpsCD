@@ -12,8 +12,10 @@ Chaque cluster reçoit un seul Root Application, puis la hiérarchie suivante :
 ```text
 Root Application (un cluster, un environnement)
 ├── foundation                 -20  capacités Kubernetes partagées
+│   ├── External Secrets Operator
 │   ├── cert-manager
 │   └── observabilité
+├── platform security local    -17  Vault de validation uniquement
 ├── platform runtime           -15  composants stateful partagés
 │   └── Consul
 ├── configuration              -10  config-ingestor
@@ -107,11 +109,14 @@ et découplé est réellement nécessaire. Le contrat opérationnel est dans
 
 ## Vault : secret plane externe
 
-Vault est un plan de sécurité, pas une dépendance Helm de workload. Pour
-staging et production, il est externe au cluster Kubernetes et hautement
+Vault est un plan de sécurité, pas une dépendance Helm de workload. Le module
+`platform/security/vault` existe uniquement dans l'overlay `local`, afin de
+valider Kubernetes Auth et External Secrets sans exposer de token dans Git.
+Pour staging et production, Vault est externe au cluster Kubernetes et hautement
 disponible : service managé, ou cluster dédié avec stockage HA, auto-unseal via
 KMS/HSM, TLS de bout en bout, audit logs centralisés et procédure de recovery
-testée. Il n'existe pas d'Application Argo `vault` dans les overlays standards.
+testée. Il n'existe donc aucune Application Argo `vault` dans les overlays
+staging ou production.
 
 Azure Key Vault ou AWS Secrets Manager peut rester le coffre de secrets
 statiques utilisé par External Secrets Operator. Vault sert aux secrets

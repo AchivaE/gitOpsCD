@@ -8,8 +8,12 @@ resources:
   - ../../projects/cluster-addons
   - ../../projects/identity
   - ../../projects/platform-runtime
+  - ../../projects/security
   - ../../management/argocd/config
   - ../../applications/foundation/security/policy-engine/local
+  - ../../applications/foundation/security/external-secrets
+  - ../../applications/platform/security/vault-local
+  - ../../applications/foundation/security/external-secrets/local-store
   - ../../applications/foundation/networking/cert-manager-local
   - ../../applications/platform/observability/monitoring-local
   - ../../applications/platform/runtime/consul-local

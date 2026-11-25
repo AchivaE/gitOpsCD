@@ -1,5 +1,5 @@
 {{- if and .Values.externalSecret.enabled .Values.configRepository.enabled }}
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: {{ include "config-ingestor.fullname" . }}-git
@@ -21,7 +21,7 @@ spec:
 ---
 {{- end }}
 {{- if and .Values.externalSecret.enabled .Values.consul.enabled }}
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: {{ include "config-ingestor.fullname" . }}-consul-acl
@@ -38,7 +38,7 @@ spec:
       remoteRef:
         key: {{ .Values.consul.acl.remoteKey | quote }}
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: {{ include "config-ingestor.fullname" . }}-consul-tls

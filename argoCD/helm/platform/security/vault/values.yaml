@@ -1,0 +1,30 @@
+# Vault is deliberately not enabled by staging or production overlays. Those
+# environments consume a private HA Vault security plane operated separately.
+vault:
+  global:
+    enabled: true
+  injector:
+    enabled: false
+  csi:
+    enabled: false
+  server:
+    enabled: true
+    authDelegator:
+      enabled: true
+    serviceAccount:
+      create: true
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: 500m, memory: 768Mi }
+    dataStorage:
+      enabled: true
+      size: 5Gi
+    auditStorage:
+      enabled: false
+    dev:
+      enabled: false
+    standalone:
+      enabled: true
+  ui:
+    enabled: true
+    serviceType: ClusterIP

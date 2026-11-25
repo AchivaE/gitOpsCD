@@ -2,9 +2,9 @@ apiVersion: v2
 name: external-secrets
 description: Version-pinned External Secrets Operator foundation module.
 type: application
-version: 0.1.0
-appVersion: "0.11.0"
+version: 0.2.0
+appVersion: "2.15.0"
 dependencies:
   - name: external-secrets
-    version: "0.11.0"
-    repository: file://charts
+    version: "2.15.0"
+    repository: https://charts.external-secrets.io

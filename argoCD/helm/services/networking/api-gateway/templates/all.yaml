@@ -1,6 +1,6 @@
 {{- if and .Values.externalSecrets.enabled .Values.consul.enabled }}
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: {{ include "gateway-ingestor.fullname" . }}-consul-acl
@@ -17,7 +17,7 @@ spec:
       remoteRef:
         key: {{ .Values.consul.acl.remoteKey | quote }}
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: {{ include "gateway-ingestor.fullname" . }}-consul-tls
@@ -47,7 +47,7 @@ spec:
 {{- end }}
 {{- if and .Values.externalSecrets.enabled .Values.vault.enabled }}
 ---
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: {{ include "gateway-ingestor.fullname" . }}-vault-tls

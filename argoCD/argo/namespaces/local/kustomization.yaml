@@ -4,5 +4,6 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - platform-identity.yaml
+  - platform-security.yaml
   - platform-runtime.yaml
   - platform-system.yaml

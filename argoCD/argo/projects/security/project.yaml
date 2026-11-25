@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: spaceup-platform-security
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-30"
+spec:
+  description: Local security-plane validation. Production Vault remains external.
+  sourceRepos:
+    - https://github.com/AchivaE/gitOpsCD.git
+  destinations:
+    - namespace: platform-security
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: rbac.authorization.k8s.io
+      kind: ClusterRoleBinding
+  namespaceResourceWhitelist:
+    - { group: "", kind: ConfigMap }
+    # Rendered by the upstream Helm chart as a Helm test hook; Argo CD does
+    # not execute it during sync, but the project still permits its manifest.
+    - { group: "", kind: Pod }
+    - { group: "", kind: PersistentVolumeClaim }
+    - { group: "", kind: Service }
+    - { group: "", kind: ServiceAccount }
+    - { group: apps, kind: StatefulSet }
+    - { group: policy, kind: PodDisruptionBudget }
+    - { group: monitoring.coreos.com, kind: ServiceMonitor }

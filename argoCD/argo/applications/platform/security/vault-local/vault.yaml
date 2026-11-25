@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-vault-local
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-17"
+spec:
+  project: spaceup-platform-security
+  source:
+    repoURL: https://github.com/AchivaE/gitOpsCD.git
+    targetRevision: main
+    path: argoCD/helm/platform/security/vault
+    helm:
+      releaseName: vault
+      valueFiles: [values.yaml, values-local.yaml]
+      version: v3
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: platform-security
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - PrunePropagationPolicy=foreground
+      - ServerSideApply=true
+      - FailOnSharedResource=true

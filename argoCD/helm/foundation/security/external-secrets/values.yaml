@@ -1,4 +1,21 @@
 external-secrets:
   installCRDs: true
+  # The operator is cluster-critical: applications cannot materialize their
+  # credentials while it is unavailable. Staging/production raise replicas
+  # and topology constraints in their environment overlays.
+  replicaCount: 1
+  resources:
+    requests: { cpu: 50m, memory: 96Mi }
+    limits: { cpu: 250m, memory: 256Mi }
+  webhook:
+    resources:
+      requests: { cpu: 25m, memory: 64Mi }
+      limits: { cpu: 150m, memory: 192Mi }
+  certController:
+    resources:
+      requests: { cpu: 25m, memory: 64Mi }
+      limits: { cpu: 150m, memory: 192Mi }
+  serviceMonitor:
+    enabled: true
   bitwarden-sdk-server:
     enabled: false

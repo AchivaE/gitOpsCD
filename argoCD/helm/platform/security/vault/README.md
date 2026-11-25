@@ -1,9 +1,13 @@
 # Vault security-plane contract
 
-Vault is represented here as an external platform contract, not a Helm chart.
-Staging and production use a private HA Vault service with auto-unseal, audit
-logs, TLS and a tested recovery procedure. Argo CD only deploys consumers that
-authenticate through workload-specific Kubernetes Auth roles.
+The local overlay renders the pinned official Vault chart for a single-node
+validation instance. It is initialized and unsealed only by the workstation
+bootstrap script; no token or recovery key is committed to Git.
+
+Staging and production use a private HA Vault service outside the application
+cluster, with auto-unseal, audit logs, TLS and a tested recovery procedure.
+Argo CD deploys only consumers that authenticate through workload-specific
+Kubernetes Auth roles in those environments.
 
 See [`../../../ARCHITECTURE.md`](../../../ARCHITECTURE.md) and
 [`../../../services/RUNTIME-DEPENDENCIES.md`](../../../services/RUNTIME-DEPENDENCIES.md).

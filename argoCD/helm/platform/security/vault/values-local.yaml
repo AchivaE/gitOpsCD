@@ -1,0 +1,35 @@
+# Local stateful Vault: initialized and unsealed only by the workstation
+# bootstrap script. It has no cloud KMS, HA guarantee or public ingress.
+vault:
+  server:
+    standalone:
+      enabled: true
+      # Local only: TLS is intentionally disabled because this instance exists
+      # to validate Kubernetes Auth and ESO wiring, not certificate operations.
+      # The explicit telemetry stanza makes the local ServiceMonitor useful.
+      config: |-
+        ui = true
+        listener "tcp" {
+          tls_disable = 1
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+          telemetry {
+            unauthenticated_metrics_access = "true"
+          }
+        }
+        storage "file" {
+          path = "/vault/data"
+        }
+        telemetry {
+          disable_hostname = true
+          prometheus_retention_time = "30s"
+        }
+    ha:
+      enabled: false
+    dataStorage:
+      size: 5Gi
+  serverTelemetry:
+    prometheusOperator: true
+    serviceMonitor:
+      enabled: true
+      interval: 30s

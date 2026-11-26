@@ -15,6 +15,7 @@ resources:
   - ../../applications/platform/security/vault-local
   - ../../applications/foundation/security/external-secrets/local-store
   - ../../applications/foundation/networking/cert-manager-local
+  - ../../applications/foundation/networking/ingress-nginx-local
   - ../../applications/platform/observability/monitoring-local
   - ../../applications/platform/runtime/consul-local
   - ../../applications/platform/identity/keycloak-local

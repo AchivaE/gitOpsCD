@@ -1,0 +1,9 @@
+# Minikube profile: no cloud load balancer, no public IP and no DNS automation.
+ingress-nginx:
+  controller:
+    service:
+      type: NodePort
+    autoscaling:
+      enabled: false
+    podDisruptionBudget:
+      enabled: false

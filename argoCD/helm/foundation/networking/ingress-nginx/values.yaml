@@ -1,0 +1,34 @@
+# This chart is intentionally enabled only by the local overlay. AKS and EKS
+# use their own provider-managed ingress implementations and IngressClasses.
+ingress-nginx:
+  controller:
+    replicaCount: 1
+    ingressClass: nginx
+    ingressClassResource:
+      name: nginx
+      enabled: true
+      # Do not silently capture Ingress objects from another controller.
+      default: false
+      controllerValue: k8s.io/ingress-nginx
+    watchIngressWithoutClass: false
+    allowSnippetAnnotations: false
+    config:
+      allow-snippet-annotations: "false"
+      annotations-risk-level: Low
+      server-tokens: "false"
+    service:
+      type: NodePort
+      externalTrafficPolicy: Local
+    admissionWebhooks:
+      enabled: true
+    metrics:
+      enabled: true
+      serviceMonitor:
+        enabled: true
+        additionalLabels:
+          release: prometheus
+    resources:
+      requests: { cpu: 100m, memory: 128Mi }
+      limits: { cpu: 500m, memory: 256Mi }
+  defaultBackend:
+    enabled: false

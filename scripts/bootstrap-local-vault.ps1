@@ -26,10 +26,6 @@ function Invoke-Vault {
     }
 }
 
-if (Test-Path -LiteralPath $recoveryFile) {
-    throw "Recovery file already exists: $recoveryFile. Refusing to initialize or overwrite a local Vault. Use the saved recovery keys to unseal it."
-}
-
 Invoke-MinikubeKubectl get serviceaccount external-secrets -n external-secrets | Out-Null
 
 $deadline = (Get-Date).AddMinutes(5)
@@ -43,18 +39,54 @@ if ($phase -ne "Running") {
     throw "Vault pod $pod is not Running. Wait for platform-vault-local to be Synced, then retry."
 }
 
-$init = (& minikube kubectl -- exec -n $namespace $pod -- env `
-    "VAULT_ADDR=http://127.0.0.1:8200" vault operator init -format=json | ConvertFrom-Json)
-if ($LASTEXITCODE -ne 0 -or $null -eq $init.root_token) {
-    throw "Vault initialization failed. If Vault was already initialized, recover its existing local keys instead of rerunning this script."
+$init = $null
+if (Test-Path -LiteralPath $recoveryFile) {
+    # Resume safely after a workstation interruption. The existing recovery
+    # material is authoritative and is never overwritten or regenerated.
+    $init = Get-Content -Raw -LiteralPath $recoveryFile | ConvertFrom-Json
+    if ($null -eq $init.root_token -or $init.unseal_keys_b64.Count -lt 3) {
+        throw "Recovery file is incomplete: $recoveryFile. Do not reinitialize Vault; recover the original keys before continuing."
+    }
+    Write-Host "Existing local recovery material found; resuming initialization without rotating Vault keys."
+}
+else {
+    $init = (& minikube kubectl -- exec -n $namespace $pod -- env `
+        "VAULT_ADDR=http://127.0.0.1:8200" vault operator init -format=json | ConvertFrom-Json)
+    if ($LASTEXITCODE -ne 0 -or $null -eq $init.root_token) {
+        throw "Vault initialization failed. If Vault was already initialized, recover its existing local keys instead of rerunning this script."
+    }
+
+    New-Item -ItemType Directory -Force -Path $RecoveryDirectory | Out-Null
+    $init | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $recoveryFile -NoNewline -Encoding utf8
 }
 
-New-Item -ItemType Directory -Force -Path $RecoveryDirectory | Out-Null
-$init | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $recoveryFile -NoNewline -Encoding utf8
-
-foreach ($key in $init.unseal_keys_b64[0..2]) {
-    Invoke-MinikubeKubectl exec -n $namespace $pod -- env `
-        "VAULT_ADDR=http://127.0.0.1:8200" vault operator unseal $key | Out-Null
+# Windows PowerShell treats a native process exit code as a terminating error
+# under ErrorActionPreference=Stop. Vault deliberately returns 2 while sealed,
+# so relax that preference only for this expected status probe.
+$previousErrorActionPreference = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
+try {
+    $sealStatusJson = & minikube kubectl -- exec -n $namespace $pod -- env `
+        "VAULT_ADDR=http://127.0.0.1:8200" vault status -format=json 2>$null
+    $sealStatusExitCode = $LASTEXITCODE
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
+# Vault returns 2 while sealed. That is an expected state during first local
+# bootstrap, not a script failure.
+if ($sealStatusExitCode -notin @(0, 2)) {
+    throw "Unable to read Vault seal status."
+}
+$sealStatus = $sealStatusJson | ConvertFrom-Json
+if ($sealStatus.sealed) {
+    foreach ($key in $init.unseal_keys_b64[0..2]) {
+        & minikube kubectl -- exec -n $namespace $pod -- env `
+            "VAULT_ADDR=http://127.0.0.1:8200" vault operator unseal $key | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            throw "Vault unseal failed. Keep the recovery material at $recoveryFile and retry this script; it will resume safely."
+        }
+    }
 }
 
 $script:rootToken = $init.root_token
@@ -94,20 +126,13 @@ Invoke-Vault @(
 # seeded by this script or committed to Git.
 Invoke-Vault @("kv", "put", "kv/platform/bootstrap", "status=ready") | Out-Null
 
-$storeDeadline = (Get-Date).AddMinutes(5)
-do {
-    & minikube kubectl -- get application external-secrets-vault-local-store -n argocd -o name 2>$null
-    if ($LASTEXITCODE -eq 0) { break }
-    Start-Sleep -Seconds 3
-} while ((Get-Date) -lt $storeDeadline)
-
-if ($LASTEXITCODE -ne 0) {
-    throw "The Root Application did not create external-secrets-vault-local-store within five minutes. Inspect argocd-bootstrap-local before retrying."
-}
-
-Invoke-MinikubeKubectl annotate application external-secrets-vault-local-store -n argocd `
+# Vault is now healthy. Refresh both Applications; the local store shares the
+# Vault wave, so App-of-Apps does not need to wait for a later child wave.
+Invoke-MinikubeKubectl annotate application platform-vault-local -n argocd `
+    argocd.argoproj.io/refresh=hard --overwrite | Out-Null
+Invoke-MinikubeKubectl annotate application argocd-bootstrap-local -n argocd `
     argocd.argoproj.io/refresh=hard --overwrite | Out-Null
 
 Write-Host "Vault local initialized and unsealed. Recovery material saved only on this workstation: $recoveryFile"
 Write-Host "Move that file to a protected local password manager, then remove it from the workstation when this local validation is complete."
-Write-Host "The ClusterSecretStore will now authenticate through Kubernetes Auth; no Vault token was stored in Git or Kubernetes."
+Write-Host "Argo CD will create the local Vault ClusterSecretStore in the same synchronization wave; no Vault token was stored in Git or Kubernetes."

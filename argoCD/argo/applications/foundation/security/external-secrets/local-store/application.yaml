@@ -4,7 +4,10 @@ metadata:
   name: external-secrets-vault-local-store
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-16"
+    # ESO is healthy from wave -20. Create the local store beside Vault so the
+    # bootstrap script can unseal Vault without waiting for a parent wave that
+    # itself waits on Vault health.
+    argocd.argoproj.io/sync-wave: "-17"
 spec:
   project: spaceup-cluster-addons
   source:

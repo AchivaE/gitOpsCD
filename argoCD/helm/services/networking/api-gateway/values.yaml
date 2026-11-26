@@ -4,6 +4,10 @@ image:
   pullPolicy: IfNotPresent
   requireDigest: false
 
+# Registry credentials are never stored in Git. Environment overlays may
+# reference a pre-provisioned dockerconfigjson Secret, for example GHCR.
+imagePullSecrets: []
+
 replicas: 2
 service: { port: 80, targetPort: 9999 }
 ingress:
@@ -100,6 +104,8 @@ networkPolicy:
 
 monitoring:
   enabled: true
+  # Namespace containing the Prometheus server selected by the ServiceMonitor.
+  namespace: platform-system
   scrapeInterval: 30s
   # Enable only after the application includes micrometer-registry-prometheus.
   serviceMonitorEnabled: false

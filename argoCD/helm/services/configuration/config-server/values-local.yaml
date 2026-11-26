@@ -1,9 +1,11 @@
-# Portable local-cluster profile (kind, k3d, Docker Desktop Kubernetes, minikube).
-# Helm still only pulls/runs the selected image; load or pull that image beforehand.
+# Portable local-cluster profile. Images are pulled directly from GitHub
+# Container Registry; credentials are provided out-of-band by ghcr-achivae.
 image:
-  repository: achiva-insgestor-config-service
-  tag: latest
+  repository: ghcr.io/achivae/config-ingestor
+  tag: "1.0.0"
   pullPolicy: IfNotPresent
+imagePullSecrets:
+  - name: ghcr-achivae
 replicas: 1
 autoscaling:
   enabled: false

@@ -90,6 +90,10 @@ spec:
       labels: {{- include "config-ingestor.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "config-ingestor.fullname" . }}
+{{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | nindent 8 }}
+{{- end }}
       securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
       containers:
         - name: config-ingestor

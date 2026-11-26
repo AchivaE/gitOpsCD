@@ -87,4 +87,10 @@
 {{- if and .Values.monitoring.serviceMonitorEnabled (not .Values.monitoring.applicationMetricsVerified) }}
 {{- fail "Set monitoring.applicationMetricsVerified=true only after the application exposes verified Prometheus metrics" }}
 {{- end }}
+{{- if and .Values.monitoring.serviceMonitorEnabled (not .Values.networkPolicy.enabled) }}
+{{- fail "Prometheus scraping requires networkPolicy.enabled=true to limit unauthenticated metrics access" }}
+{{- end }}
+{{- if and .Values.monitoring.serviceMonitorEnabled (empty .Values.monitoring.namespace) }}
+{{- fail "monitoring.namespace is required when ServiceMonitor scraping is enabled" }}
+{{- end }}
 {{- end }}

@@ -5,6 +5,10 @@ image:
   pullPolicy: IfNotPresent
   requireDigest: false
 
+# Registry credentials are never stored in Git. Environment overlays may
+# reference a pre-provisioned dockerconfigjson Secret, for example GHCR.
+imagePullSecrets: []
+
 replicas: 2
 service:
   port: 8888

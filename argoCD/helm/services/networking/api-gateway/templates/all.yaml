@@ -98,6 +98,10 @@ spec:
         prometheus.io/port: "9999"
     spec:
       serviceAccountName: {{ include "gateway-ingestor.fullname" . }}
+{{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | nindent 8 }}
+{{- end }}
       securityContext: { runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, fsGroup: 10001, seccompProfile: { type: RuntimeDefault } }
       terminationGracePeriodSeconds: 45
       containers:
@@ -110,26 +114,28 @@ spec:
             - name: SPRING_PROFILES_ACTIVE
               value: {{ ternary "prod" "dev,docker" .Values.vault.enabled | quote }}
             - name: MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE
-              value: health,info
+              value: health,info,prometheus
             - name: MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS
               value: never
             - name: CONFIG_SERVER_URL
               value: {{ .Values.bootstrap.configServerUrl | quote }}
             - name: SPRING_CLOUD_CONFIG_FAILFAST
               value: {{ .Values.bootstrap.configFailFast | quote }}
+            - name: SPACEUP_GATEWAY_OIDC_ENABLED
+              value: {{ .Values.oidc.enabled | quote }}
+            - name: SPACEUP_GATEWAY_OIDC_AUDIENCES
+              value: {{ join "," .Values.oidc.audiences | quote }}
+            - name: SPACEUP_GATEWAY_OIDC_PUBLIC_PATHS
+              value: {{ join "," .Values.oidc.publicPaths | quote }}
+            - name: SPACEUP_GATEWAY_CORS_ENABLED
+              value: {{ .Values.cors.enabled | quote }}
+            - name: SPACEUP_GATEWAY_CORS_ALLOWED_ORIGINS
+              value: {{ join "," .Values.cors.allowedOrigins | quote }}
 {{- if .Values.oidc.enabled }}
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI
               value: {{ .Values.oidc.issuerUri | quote }}
             - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI
               value: {{ .Values.oidc.jwkSetUri | quote }}
-            - name: SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_AUDIENCES
-              value: {{ join "," .Values.oidc.audiences | quote }}
-            - name: SPACEUP_GATEWAY_OIDC_PUBLIC_PATHS
-              value: {{ join "," .Values.oidc.publicPaths | quote }}
-{{- end }}
-{{- if .Values.cors.enabled }}
-            - name: SPACEUP_GATEWAY_CORS_ALLOWED_ORIGINS
-              value: {{ join "," .Values.cors.allowedOrigins | quote }}
 {{- end }}
             - name: SPRING_CLOUD_CONSUL_ENABLED
               value: {{ .Values.consul.enabled | quote }}
@@ -276,6 +282,13 @@ spec:
         - namespaceSelector:
             matchLabels: { kubernetes.io/metadata.name: {{ .Values.networkPolicy.ingressControllerNamespace }} }
       ports: [{ protocol: TCP, port: 9999 }]
+{{- if and .Values.monitoring.enabled .Values.monitoring.serviceMonitorEnabled }}
+    # Prometheus is allowed only to reach the explicitly public metrics endpoint.
+    - from:
+        - namespaceSelector:
+            matchLabels: { kubernetes.io/metadata.name: {{ .Values.monitoring.namespace | quote }} }
+      ports: [{ protocol: TCP, port: 9999 }]
+{{- end }}
   egress:
     - to:
         - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }

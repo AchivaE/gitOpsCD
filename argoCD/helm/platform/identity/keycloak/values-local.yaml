@@ -65,3 +65,72 @@ keycloak:
     existingSecretUserKey: ""
     existingSecretDatabaseKey: ""
     existingSecretPasswordKey: ""
+  # The identity contract is versioned and replayed after the Keycloak release.
+  # No users or credentials are imported here: their passwords stay out of Git.
+  # The legacy image is local-only, matching the local Keycloak image above.
+  keycloakConfigCli:
+    enabled: true
+    image:
+      registry: docker.io
+      repository: bitnamilegacy/keycloak-config-cli
+      tag: 6.2.1-debian-12-r1
+      pullPolicy: IfNotPresent
+    backoffLimit: 2
+    resources:
+      requests: { cpu: 100m, memory: 256Mi }
+      limits: { cpu: 500m, memory: 512Mi }
+    extraEnvVars:
+      - name: IMPORT_VALIDATE
+        value: "true"
+    configuration:
+      spaceup-local.json: |
+        {
+          "realm": "spaceup-local",
+          "enabled": true,
+          "displayName": "SpaceUP Local",
+          "roles": {
+            "realm": [
+              { "name": "spaceup-user", "description": "Authenticated SpaceUP user" },
+              { "name": "spaceup-admin", "description": "SpaceUP platform administrator" }
+            ]
+          },
+          "clients": [
+            {
+              "clientId": "spaceup-gateway",
+              "name": "SpaceUP Gateway resource server",
+              "enabled": true,
+              "protocol": "openid-connect",
+              "publicClient": true,
+              "standardFlowEnabled": false,
+              "implicitFlowEnabled": false,
+              "directAccessGrantsEnabled": false,
+              "serviceAccountsEnabled": false
+            },
+            {
+              "clientId": "spaceup-local-test",
+              "name": "SpaceUP local OIDC test client",
+              "enabled": true,
+              "protocol": "openid-connect",
+              "publicClient": true,
+              "standardFlowEnabled": false,
+              "implicitFlowEnabled": false,
+              "directAccessGrantsEnabled": true,
+              "serviceAccountsEnabled": false,
+              "protocolMappers": [
+                {
+                  "name": "spaceup-gateway-audience",
+                  "protocol": "openid-connect",
+                  "protocolMapper": "oidc-audience-mapper",
+                  "config": {
+                    "included.client.audience": "spaceup-gateway",
+                    "included.custom.audience": "",
+                    "access.token.claim": "true",
+                    "id.token.claim": "false",
+                    "userinfo.token.claim": "false",
+                    "introspection.token.claim": "true"
+                  }
+                }
+              ]
+            }
+          ]
+        }

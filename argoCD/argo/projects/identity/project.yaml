@@ -19,6 +19,9 @@ spec:
     - { group: "", kind: Service }
     - { group: "", kind: ServiceAccount }
     - { group: apps, kind: StatefulSet }
+    # The reviewed keycloak-config-cli Helm hook reconciles realms, clients
+    # and protocol mappers after Keycloak becomes available.
+    - { group: batch, kind: Job }
     - { group: autoscaling, kind: HorizontalPodAutoscaler }
     - { group: external-secrets.io, kind: ExternalSecret }
     - { group: monitoring.coreos.com, kind: PrometheusRule }

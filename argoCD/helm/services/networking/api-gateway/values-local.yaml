@@ -26,5 +26,15 @@ externalSecrets:
   enabled: false
 networkPolicy:
   enabled: false
+oidc:
+  enabled: true
+  issuerUri: http://127.0.0.1:8081/realms/spaceup-local
+  jwkSetUri: http://platform-keycloak-local.platform-identity.svc.cluster.local/realms/spaceup-local/protocol/openid-connect/certs
+  audiences: [spaceup-gateway]
+  publicPaths: []
+
+cors:
+  enabled: true
+  allowedOrigins: [http://localhost:4200]
 monitoring:
   enabled: false
